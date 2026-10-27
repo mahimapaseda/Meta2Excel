@@ -47,8 +47,7 @@ namespace MetaReceiptsLite
                 var r = receipts[i];
                 int row = i + 2;
                 ws.Cell(row, 1).Value = r.InvoiceNo;
-                ws.Cell(row, 2).Value = r.InvoiceDate;
-                ws.Cell(row, 2).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
+                SetDateCell(ws.Cell(row, 2), r.InvoiceDate);
                 ws.Cell(row, 3).Value = r.ReferenceNumber;
                 ws.Cell(row, 4).Value = r.TransactionId;
                 ws.Cell(row, 4).Style.NumberFormat.Format = "@";
@@ -114,14 +113,11 @@ namespace MetaReceiptsLite
                 var it = items[i];
                 int row = i + 2;
                 ws.Cell(row, 1).Value = it.InvoiceNo;
-                ws.Cell(row, 2).Value = it.InvoiceDate;
-                ws.Cell(row, 2).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
+                SetDateCell(ws.Cell(row, 2), it.InvoiceDate);
                 ws.Cell(row, 3).Value = it.CampaignCode;
                 ws.Cell(row, 4).Value = it.CampaignName;
-                ws.Cell(row, 5).Value = it.PeriodFrom;
-                ws.Cell(row, 5).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
-                ws.Cell(row, 6).Value = it.PeriodTo;
-                ws.Cell(row, 6).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
+                SetDateCell(ws.Cell(row, 5), it.PeriodFrom);
+                SetDateCell(ws.Cell(row, 6), it.PeriodTo);
                 ws.Cell(row, 7).Value = it.AdSet;
                 ws.Cell(row, 8).Value = it.CurrencyCode;
                 ws.Cell(row, 9).Value = it.Impressions;
@@ -362,6 +358,20 @@ namespace MetaReceiptsLite
                 cell.Style.Font.FontColor = XLColor.White;
                 cell.Style.Fill.BackgroundColor = HeaderBg;
             }
+        }
+
+        /// <summary>
+        /// Match CSV behavior: leave blank instead of writing DateTime.MinValue (1899/0001).
+        /// </summary>
+        private static void SetDateCell(IXLCell cell, DateTime value)
+        {
+            if (value == default(DateTime))
+            {
+                cell.Clear();
+                return;
+            }
+            cell.Value = value;
+            cell.Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
         }
     }
 }

@@ -23,7 +23,7 @@ namespace MetaReceiptsLite.Tests
             var dir = SamplesDir();
             Assert.True(Directory.Exists(dir), "Samples folder missing: " + dir);
 
-            var files = Directory.GetFiles(dir, "2026-10-16*.pdf").OrderBy(f => f).ToArray();
+            var files = Directory.GetFiles(dir, "sample-usd-*.pdf").OrderBy(f => f).ToArray();
             Assert.Equal(4, files.Length);
 
             var receipts = new List<Receipt>();
@@ -56,7 +56,8 @@ namespace MetaReceiptsLite.Tests
         public void DuplicateTransactionId_CanBeDetected()
         {
             var dir = SamplesDir();
-            var file = Directory.GetFiles(dir, "2026-10-16T12-22*.pdf").First();
+            var file = Path.Combine(dir, "sample-usd-24.pdf");
+            Assert.True(File.Exists(file), "Missing " + file);
             var a = ReceiptParser.ParseFile(file);
             var b = ReceiptParser.ParseFile(file);
             Assert.Equal(a.TransactionId, b.TransactionId);

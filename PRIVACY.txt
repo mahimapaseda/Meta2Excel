@@ -1,0 +1,12 @@
+Meta Receipts Lite — Privacy notice
+===================================
+
+This application runs entirely on your Windows PC.
+
+- It does not send your PDFs, receipts, or exports to any server.
+- It does not include telemetry, analytics, or automatic update checks.
+- PDFs you open are read locally to extract Meta Ads receipt fields.
+- Excel/CSV files you export are written only to paths you choose.
+- Temporary files may be created under your Windows TEMP folder during ZIP export and are deleted afterward when possible.
+
+Keep exported workbooks secure: they may contain account names, payment references, and campaign spend data.

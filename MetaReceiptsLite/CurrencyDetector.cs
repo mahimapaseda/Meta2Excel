@@ -21,6 +21,8 @@ namespace MetaReceiptsLite
 
     public static class CurrencyDetector
     {
+        // Bare "$" defaults to USD unless an ISO code is preferred via ApplyIsoPreference.
+        // Bare "Rs"/"Rs." defaults to INR; use ISO "LKR" when the receipt is Sri Lankan rupees.
         private static readonly Dictionary<string, string> SymbolToCode = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { "$", "USD" },
@@ -28,8 +30,14 @@ namespace MetaReceiptsLite
             { "£", "GBP" },
             { "¥", "JPY" },
             { "₹", "INR" },
-            { "Rs", "LKR" },
-            { "Rs.", "LKR" }
+            { "Rs", "INR" },
+            { "Rs.", "INR" }
+        };
+
+        /// <summary>Deterministic ISO scan order (first match wins).</summary>
+        private static readonly string[] IsoPriority =
+        {
+            "USD", "EUR", "GBP", "LKR", "INR", "AUD", "CAD", "SGD", "AED", "JPY", "NZD", "CHF", "HKD", "MYR", "PHP", "THB", "ZAR"
         };
 
         private static readonly Dictionary<string, string> CodeToSymbol = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -46,10 +54,7 @@ namespace MetaReceiptsLite
             { "AED", "AED" }
         };
 
-        private static readonly HashSet<string> KnownCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "USD", "EUR", "GBP", "LKR", "INR", "AUD", "CAD", "SGD", "AED", "JPY", "NZD", "CHF", "HKD", "MYR", "PHP", "THB", "ZAR"
-        };
+        private static readonly HashSet<string> KnownCodes = new HashSet<string>(IsoPriority, StringComparer.OrdinalIgnoreCase);
 
         // Matches money tokens: optional currency before/after amount
         private static readonly Regex MoneyToken = new Regex(
@@ -111,17 +116,24 @@ namespace MetaReceiptsLite
         public static string FindIsoCode(string text)
         {
             if (string.IsNullOrEmpty(text)) return null;
-            foreach (var code in KnownCodes)
+            // Prefer the rightmost ISO code (often next to the amount), then priority order for ties.
+            string best = null;
+            int bestIndex = -1;
+            foreach (var code in IsoPriority)
             {
-                // Word-boundary-ish match
-                var idx = text.IndexOf(code, StringComparison.OrdinalIgnoreCase);
+                int idx = text.LastIndexOf(code, StringComparison.OrdinalIgnoreCase);
                 if (idx < 0) continue;
                 bool beforeOk = idx == 0 || !char.IsLetterOrDigit(text[idx - 1]);
                 int end = idx + code.Length;
                 bool afterOk = end >= text.Length || !char.IsLetterOrDigit(text[end]);
-                if (beforeOk && afterOk) return code.ToUpperInvariant();
+                if (!beforeOk || !afterOk) continue;
+                if (idx > bestIndex)
+                {
+                    bestIndex = idx;
+                    best = code.ToUpperInvariant();
+                }
             }
-            return null;
+            return best;
         }
 
         public static string SymbolForCode(string code)

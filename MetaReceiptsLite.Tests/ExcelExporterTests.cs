@@ -62,6 +62,53 @@ namespace MetaReceiptsLite.Tests
             }
         }
 
+        [Fact]
+        public void Export_BlankDefaultDates_MatchCsvBehavior()
+        {
+            var receipt = new Receipt
+            {
+                InvoiceNo = "FBADS-BLANK",
+                InvoiceDate = new DateTime(2026, 10, 16, 12, 0, 0),
+                TransactionId = "1-2",
+                AccountId = "99",
+                CurrencyCode = "USD",
+                CurrencySymbol = "$",
+                AmountBilled = 1m,
+                ItemsTotal = 1m,
+                Check = "OK",
+                SourceFile = "x.pdf"
+            };
+            receipt.Items.Add(new LineItem
+            {
+                InvoiceNo = receipt.InvoiceNo,
+                InvoiceDate = receipt.InvoiceDate,
+                CampaignCode = "C",
+                CampaignName = "n",
+                PeriodFrom = default(DateTime),
+                PeriodTo = default(DateTime),
+                AdSet = "ad",
+                Impressions = 100,
+                Cost = 1m,
+                CurrencyCode = "USD"
+            });
+
+            var path = Path.Combine(Path.GetTempPath(), "mrl_blank_" + Guid.NewGuid().ToString("N") + ".xlsx");
+            try
+            {
+                ExcelExporter.Export(path, new List<Receipt> { receipt }, receipt.Items);
+                using (var wb = new XLWorkbook(path))
+                {
+                    var li = wb.Worksheet("Line Items");
+                    Assert.True(li.Cell(2, 5).IsEmpty() || string.IsNullOrWhiteSpace(li.Cell(2, 5).GetFormattedString()));
+                    Assert.True(li.Cell(2, 6).IsEmpty() || string.IsNullOrWhiteSpace(li.Cell(2, 6).GetFormattedString()));
+                }
+            }
+            finally
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+        }
+
         private static Receipt MakeReceipt(string invoice, string txn, decimal billed, string code, string symbol, int itemCount)
         {
             var r = new Receipt

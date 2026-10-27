@@ -1,13 +1,18 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Build Meta Receipts Lite Release folder, portable ZIP, and Inno Setup installer.
+  Build Meta Receipts Lite Release folder, portable ZIP, Setup.exe, and SHA256 checksums.
 
 .PARAMETER Version
-  Release version string (default 1.0.4). Passed into the Inno script as MyAppVersion.
+  Release version string (default 1.0.5). Passed into the Inno script as MyAppVersion.
+
+.PARAMETER SignThumbprint
+  Optional Authenticode certificate thumbprint. If set (or $env:MRL_SIGN_THUMBPRINT),
+  signs Setup.exe and MetaReceiptsLite.exe when signtool is available.
 #>
 param(
-    [string]$Version = "1.0.4"
+    [string]$Version = "1.0.5",
+    [string]$SignThumbprint = $env:MRL_SIGN_THUMBPRINT
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,6 +47,7 @@ if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Write-Host "==> Creating portable ZIP: $zipName" -ForegroundColor Cyan
 Compress-Archive -Path (Join-Path $releaseDir "*") -DestinationPath $zipPath -Force
 
+# Standalone exe copy for GitHub Assets listing - cannot run alone without DLLs from the ZIP.
 $exeCopy = Join-Path $dist "MetaReceiptsLite.exe"
 Copy-Item $exePath $exeCopy -Force
 
@@ -78,14 +84,57 @@ if (-not (Test-Path $setupPath)) {
     throw "Expected installer not found: $setupPath"
 }
 
+function Find-SignTool {
+    $cmd = Get-Command signtool.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    $kits = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
+    if (Test-Path $kits) {
+        $found = Get-ChildItem $kits -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\x64\\' } |
+            Select-Object -First 1
+        if ($found) { return $found.FullName }
+    }
+    return $null
+}
+
+if (-not [string]::IsNullOrWhiteSpace($SignThumbprint)) {
+    $signtool = Find-SignTool
+    if (-not $signtool) {
+        Write-Warning "Sign thumbprint set but signtool.exe not found - skipping Authenticode."
+    }
+    else {
+        Write-Host "==> Signing with thumbprint $SignThumbprint" -ForegroundColor Cyan
+        foreach ($f in @($setupPath, $exePath, $exeCopy)) {
+            & $signtool sign /sha1 $SignThumbprint /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $f
+            if ($LASTEXITCODE -ne 0) { throw "signtool failed for $f" }
+        }
+        # Re-zip after signing the release-dir exe so portable ZIP contains signed binary
+        if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+        Compress-Archive -Path (Join-Path $releaseDir "*") -DestinationPath $zipPath -Force
+    }
+}
+else {
+    Write-Host "==> No sign thumbprint (MRL_SIGN_THUMBPRINT) - skipping Authenticode." -ForegroundColor DarkYellow
+}
+
+Write-Host "==> Writing SHA256SUMS.txt" -ForegroundColor Cyan
+$sumsPath = Join-Path $dist "SHA256SUMS-v$Version.txt"
+$targets = @($setupPath, $zipPath, $exeCopy) | Where-Object { Test-Path $_ }
+$lines = foreach ($t in $targets) {
+    $hash = (Get-FileHash -Algorithm SHA256 -Path $t).Hash.ToLowerInvariant()
+    "{0}  {1}" -f $hash, (Split-Path $t -Leaf)
+}
+Set-Content -Path $sumsPath -Value $lines -Encoding ASCII
+
 Write-Host ""
 Write-Host "Done. Dist outputs:" -ForegroundColor Green
 Get-ChildItem $dist -File | Where-Object {
-    $_.Name -like "*$Version*" -or $_.Name -eq "MetaReceiptsLite.exe"
+    $_.Name -like "*$Version*" -or $_.Name -eq "MetaReceiptsLite.exe" -or $_.Name -like "SHA256SUMS*"
 } | ForEach-Object {
-    "{0,-42} {1,8:N2} MB" -f $_.Name, ($_.Length / 1MB)
+    "{0,-46} {1,8:N2} MB" -f $_.Name, ($_.Length / 1MB)
 }
 Write-Host ""
 Write-Host "Portable ZIP : $zipPath"
 Write-Host "Setup.exe    : $setupPath"
-Write-Host "Exe copy     : $exeCopy"
+Write-Host "Exe copy     : $exeCopy  (listing only - needs DLLs from ZIP to run)"
+Write-Host "Checksums    : $sumsPath"

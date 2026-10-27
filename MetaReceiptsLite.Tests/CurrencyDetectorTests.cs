@@ -13,8 +13,9 @@ namespace MetaReceiptsLite.Tests
         [InlineData("LKR 1,200.00", 1200.00, "LKR", "Rs")]
         [InlineData("£11.50", 11.50, "GBP", "£")]
         [InlineData("1.234,56 EUR", 1234.56, "EUR", "€")]
-        [InlineData("Rs. 500.00", 500.00, "LKR", "Rs")]
+        [InlineData("Rs. 500.00", 500.00, "INR", "₹")]
         [InlineData("₹99.99", 99.99, "INR", "₹")]
+        [InlineData("LKR 500.00", 500.00, "LKR", "Rs")]
         public void TryParseMoney_CommonFormats(string text, double expectedAmount, string code, string symbol)
         {
             var r = CurrencyDetector.TryParseMoney(text);

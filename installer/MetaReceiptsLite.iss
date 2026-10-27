@@ -2,7 +2,7 @@
 ; Compile with ISCC.exe after: dotnet build -c Release
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.4"
+  #define MyAppVersion "1.0.5"
 #endif
 
 #define MyAppName "Meta Receipts Lite"
@@ -31,8 +31,8 @@ WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64compatible
 CloseApplications=yes
 RestartApplications=no
-InfoBeforeFile=
-LicenseFile=
+InfoBeforeFile=..\PRIVACY.txt
+LicenseFile=..\LICENSE
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -42,6 +42,8 @@ Name: "desktopicon"; Description: "Create a &Desktop shortcut"; GroupDescription
 
 [Files]
 Source: "{#MyAppSource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\PRIVACY.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\AppIcon.ico"
@@ -53,3 +55,31 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: no
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
+
+[Code]
+function IsDotNet48OrNewer(): Boolean;
+var
+  release: Cardinal;
+begin
+  Result := False;
+  if RegQueryDWordValue(HKLM, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full', 'Release', release) then
+  begin
+    { 528040 = .NET Framework 4.8 }
+    Result := release >= 528040;
+  end;
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  Result := True;
+  if not IsDotNet48OrNewer() then
+  begin
+    MsgBox(
+      '{#MyAppName} requires Microsoft .NET Framework 4.8.'#13#10#13#10 +
+      'Install it from:'#13#10 +
+      'https://dotnet.microsoft.com/download/dotnet-framework/net48'#13#10#13#10 +
+      'Then run this Setup again.',
+      mbError, MB_OK);
+    Result := False;
+  end;
+end;

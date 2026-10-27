@@ -25,7 +25,7 @@ namespace MetaReceiptsLite
 
         private readonly List<Receipt> _receipts = new List<Receipt>();
         private readonly List<LineItem> _items = new List<LineItem>();
-        private readonly HashSet<string> _transactionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly ReceiptDeduper _deduper = new ReceiptDeduper();
 
         private Panel _header;
         private Label _brandTitle;
@@ -554,15 +554,12 @@ namespace MetaReceiptsLite
                             var receipt = ReceiptParser.ParseFile(file);
                             lock (_receipts)
                             {
-                                if (!string.IsNullOrEmpty(receipt.TransactionId) &&
-                                    _transactionIds.Contains(receipt.TransactionId))
+                                string dupReason;
+                                if (!_deduper.TryRegister(receipt, out dupReason))
                                 {
-                                    errors.Add(name + " — duplicate (Transaction ID " + receipt.TransactionId + ")");
+                                    errors.Add(name + " — " + dupReason);
                                     continue;
                                 }
-
-                                if (!string.IsNullOrEmpty(receipt.TransactionId))
-                                    _transactionIds.Add(receipt.TransactionId);
                                 _receipts.Add(receipt);
                                 _items.AddRange(receipt.Items);
                                 added++;
@@ -733,8 +730,7 @@ namespace MetaReceiptsLite
             foreach (var r in selected)
             {
                 _receipts.Remove(r);
-                if (!string.IsNullOrEmpty(r.TransactionId))
-                    _transactionIds.Remove(r.TransactionId);
+                _deduper.Unregister(r);
                 if (r.Items != null)
                 {
                     var set = new HashSet<LineItem>(r.Items);
@@ -751,91 +747,136 @@ namespace MetaReceiptsLite
             if (_busy) return;
             _receipts.Clear();
             _items.Clear();
-            _transactionIds.Clear();
+            _deduper.Clear();
             RefreshAllGrids();
             UpdateStatus();
         }
 
-        private void ExportExcel()
+        private async void ExportExcel()
         {
+            if (_busy) return;
             if (_receipts.Count == 0)
             {
                 MessageBox.Show(this, "No receipts to export.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
+
+            string path;
             using (var dlg = new SaveFileDialog())
             {
                 dlg.Filter = "Excel workbook (*.xlsx)|*.xlsx";
                 dlg.FileName = ExportFileName("MetaReceipts", ".xlsx");
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
-                try
-                {
-                    ExcelExporter.Export(dlg.FileName, _receipts, _items);
-                    MessageBox.Show(this, "Excel exported successfully.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch (IOException)
-                {
-                    MessageBox.Show(this,
-                        "Cannot write the file. It may be open in Excel. Close it and try again.",
-                        Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(this, "Export failed: " + ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                path = dlg.FileName;
             }
+
+            var receiptsSnap = new List<Receipt>(_receipts);
+            var itemsSnap = new List<LineItem>(_items);
+            await RunExportAsync("Exporting Excel...", token =>
+            {
+                token.ThrowIfCancellationRequested();
+                ExcelExporter.Export(path, receiptsSnap, itemsSnap);
+            }, "Excel exported successfully.").ConfigureAwait(true);
         }
 
         private enum CsvMode { LineItems, Receipts, BothFolder, BothZip }
 
-        private void ExportCsv(CsvMode mode)
+        private async void ExportCsv(CsvMode mode)
         {
+            if (_busy) return;
             if (_receipts.Count == 0)
             {
                 MessageBox.Show(this, "No receipts to export.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            try
+
+            string path = null;
+            bool asZip = false;
+            switch (mode)
             {
-                switch (mode)
+                case CsvMode.LineItems:
+                    using (var dlg = new SaveFileDialog())
+                    {
+                        dlg.Filter = "CSV (*.csv)|*.csv";
+                        dlg.FileName = ExportFileName("line-items", ".csv");
+                        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                        path = dlg.FileName;
+                    }
+                    break;
+                case CsvMode.Receipts:
+                    using (var dlg = new SaveFileDialog())
+                    {
+                        dlg.Filter = "CSV (*.csv)|*.csv";
+                        dlg.FileName = ExportFileName("receipts", ".csv");
+                        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                        path = dlg.FileName;
+                    }
+                    break;
+                case CsvMode.BothFolder:
+                    using (var dlg = new FolderBrowserDialog())
+                    {
+                        dlg.Description = "Choose folder for CSV files";
+                        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                        path = dlg.SelectedPath;
+                    }
+                    break;
+                case CsvMode.BothZip:
+                    using (var dlg = new SaveFileDialog())
+                    {
+                        dlg.Filter = "ZIP (*.zip)|*.zip";
+                        dlg.FileName = ExportFileName("meta-receipts-export", ".zip");
+                        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                        path = dlg.FileName;
+                        asZip = true;
+                    }
+                    break;
+            }
+
+            var receiptsSnap = new List<Receipt>(_receipts);
+            var itemsSnap = new List<LineItem>(_items);
+            var chosenMode = mode;
+            var chosenPath = path;
+            var chosenZip = asZip;
+
+            await RunExportAsync("Exporting CSV...", token =>
+            {
+                token.ThrowIfCancellationRequested();
+                switch (chosenMode)
                 {
                     case CsvMode.LineItems:
-                        using (var dlg = new SaveFileDialog())
-                        {
-                            dlg.Filter = "CSV (*.csv)|*.csv";
-                            dlg.FileName = ExportFileName("line-items", ".csv");
-                            if (dlg.ShowDialog(this) != DialogResult.OK) return;
-                            CsvExporter.ExportLineItems(dlg.FileName, _items);
-                        }
+                        CsvExporter.ExportLineItems(chosenPath, itemsSnap);
                         break;
                     case CsvMode.Receipts:
-                        using (var dlg = new SaveFileDialog())
-                        {
-                            dlg.Filter = "CSV (*.csv)|*.csv";
-                            dlg.FileName = ExportFileName("receipts", ".csv");
-                            if (dlg.ShowDialog(this) != DialogResult.OK) return;
-                            CsvExporter.ExportReceipts(dlg.FileName, _receipts);
-                        }
+                        CsvExporter.ExportReceipts(chosenPath, receiptsSnap);
                         break;
                     case CsvMode.BothFolder:
-                        using (var dlg = new FolderBrowserDialog())
-                        {
-                            dlg.Description = "Choose folder for CSV files";
-                            if (dlg.ShowDialog(this) != DialogResult.OK) return;
-                            CsvExporter.ExportBoth(dlg.SelectedPath, _receipts, _items, false);
-                        }
+                        CsvExporter.ExportBoth(chosenPath, receiptsSnap, itemsSnap, false);
                         break;
                     case CsvMode.BothZip:
-                        using (var dlg = new SaveFileDialog())
-                        {
-                            dlg.Filter = "ZIP (*.zip)|*.zip";
-                            dlg.FileName = ExportFileName("meta-receipts-export", ".zip");
-                            if (dlg.ShowDialog(this) != DialogResult.OK) return;
-                            CsvExporter.ExportBoth(dlg.FileName, _receipts, _items, true);
-                        }
+                        CsvExporter.ExportBoth(chosenPath, receiptsSnap, itemsSnap, chosenZip);
                         break;
                 }
-                MessageBox.Show(this, "CSV export completed.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }, "CSV export completed.").ConfigureAwait(true);
+        }
+
+        private async System.Threading.Tasks.Task RunExportAsync(string statusText, Action<CancellationToken> work, string successMessage)
+        {
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
+            SetBusy(true);
+            _statusLabel.Text = statusText;
+            try
+            {
+                await Task.Run(() => work(token), token).ConfigureAwait(true);
+                if (!token.IsCancellationRequested)
+                {
+                    UpdateStatus();
+                    MessageBox.Show(this, successMessage, Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _statusLabel.Text = "Export cancelled.";
             }
             catch (IOException)
             {
@@ -846,6 +887,12 @@ namespace MetaReceiptsLite
             catch (Exception ex)
             {
                 MessageBox.Show(this, "Export failed: " + ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetBusy(false);
+                UpdateStatus();
+                if (_cts != null) { _cts.Dispose(); _cts = null; }
             }
         }
 

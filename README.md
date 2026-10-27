@@ -16,10 +16,12 @@ Designed for **low-spec PCs**: .NET Framework 4.8 WinForms, small footprint, seq
 
 | Method | What you get |
 |--------|----------------|
-| **Setup installer** (recommended) | `MetaReceiptsLite-Setup-v*.exe` — installs under `%LOCALAPPDATA%\Programs\MetaReceiptsLite`, Start Menu shortcut, optional Desktop shortcut, uninstall via **Settings → Apps**. **No admin rights** required. |
+| **Setup installer** (recommended) | `MetaReceiptsLite-Setup-v*.exe` — installs under `%LOCALAPPDATA%\Programs\MetaReceiptsLite`, Start Menu shortcut, optional Desktop shortcut, uninstall via **Settings → Apps**. **No admin rights** required. Setup checks for .NET Framework 4.8 and shows LICENSE / privacy notice. |
 | **Portable ZIP** | Unzip and run `MetaReceiptsLite.exe` (keep DLLs beside it). No Start Menu / Apps entry unless you create shortcuts yourself. |
 
-Running the portable `.exe` alone does **not** “install” the app into Windows — use the Setup for that.
+Running a lone `MetaReceiptsLite.exe` download **without** the ZIP DLLs will not work — use Setup or the full ZIP. SHA256 checksums are written to `dist/SHA256SUMS-v*.txt` by the release script. Authenticode signing runs only when `MRL_SIGN_THUMBPRINT` (or `-SignThumbprint`) is set.
+
+Privacy: processing is local-only — see [PRIVACY.txt](PRIVACY.txt).
 
 **Windows 7 SP1:** install [.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48) offline installer first. The Setup does not bundle the .NET Framework runtime.
 
