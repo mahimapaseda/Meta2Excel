@@ -10,16 +10,24 @@ Designed for **low-spec PCs**: .NET Framework 4.8 WinForms, small footprint, seq
 
 - Windows 10 / 11 (Windows 7 SP1 possible with .NET Framework 4.8 installed)
 - **.NET Framework 4.8** (pre-installed on Windows 10/11)
-- No admin rights, no installer, no Office/Excel required to *create* workbooks (Excel/LibreOffice only needed to open the output)
+- No Office/Excel required to *create* workbooks (Excel/LibreOffice only needed to open the output)
 
-Deploy by copying the Release folder (or unzipping the zip). Nothing else to install on Windows 10/11.
+**Two ways to get the app:**
 
-**Windows 7 SP1:** install [.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48) offline installer, then copy the app folder.
+| Method | What you get |
+|--------|----------------|
+| **Setup installer** (recommended) | `MetaReceiptsLite-Setup-v*.exe` — installs under `%LOCALAPPDATA%\Programs\MetaReceiptsLite`, Start Menu shortcut, optional Desktop shortcut, uninstall via **Settings → Apps**. **No admin rights** required. |
+| **Portable ZIP** | Unzip and run `MetaReceiptsLite.exe` (keep DLLs beside it). No Start Menu / Apps entry unless you create shortcuts yourself. |
+
+Running the portable `.exe` alone does **not** “install” the app into Windows — use the Setup for that.
+
+**Windows 7 SP1:** install [.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48) offline installer first. The Setup does not bundle the .NET Framework runtime.
 
 ### Developers
 
 - [.NET SDK 8+](https://dotnet.microsoft.com/download) (builds net48)
 - Optional: [.NET Framework 4.8 Developer Pack](https://dotnet.microsoft.com/download/dotnet-framework/net48) — or rely on the `Microsoft.NETFramework.ReferenceAssemblies` package (already referenced)
+- [Inno Setup 6](https://jrsoftware.org/isinfo.php) (free) — required to compile `MetaReceiptsLite-Setup-*.exe`
 
 > **Note:** Use the NuGet package **`PdfPig`** (namespace `UglyToad.PdfPig`). Do **not** reference package id `UglyToad.PdfPig` on nuget.org — that ID was taken over by unrelated packages.
 
@@ -31,14 +39,21 @@ dotnet restore
 dotnet build -c Release
 dotnet test -c Release
 
+# One-shot: Release build + portable ZIP + Setup.exe → .\dist\
+.\scripts\Build-Release.ps1 -Version 1.0.4
+```
+
+Manual alternatives:
+
+```powershell
 # Deployable folder (exe + DLLs):
 explorer .\MetaReceiptsLite\bin\Release\net48
 
-# Zip for distribution:
-Compress-Archive -Path .\MetaReceiptsLite\bin\Release\net48\* -DestinationPath MetaReceiptsLite.zip -Force
+# Portable zip only:
+Compress-Archive -Path .\MetaReceiptsLite\bin\Release\net48\* -DestinationPath .\dist\MetaReceiptsLite.zip -Force
 ```
 
-Target size: **under 15 MB** for the Release folder / zip.
+Target size: **under 15 MB** for the Release folder / portable zip.
 
 Optional client warm-up (admin, once per machine):
 
@@ -110,10 +125,13 @@ Working-set and cold-start should be re-measured on the target low-spec HDD PC w
 
 ```
 MetaReceiptsLite/          WinForms app (net48)
-  Program.cs, MainForm.cs
+  Program.cs, MainForm.cs, AppIcon.ico
   Models.cs, ReceiptParser.cs, CurrencyDetector.cs
   ExcelExporter.cs, CsvExporter.cs, DailySpendChart.cs
 MetaReceiptsLite.Tests/    xUnit tests + Samples/*.pdf
+installer/                 Inno Setup script (MetaReceiptsLite.iss)
+scripts/Build-Release.ps1  Build ZIP + Setup.exe into dist/
+dist/                      Packaging output (gitignored)
 ```
 
 ## License / libraries
