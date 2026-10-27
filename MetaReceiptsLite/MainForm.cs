@@ -15,19 +15,39 @@ namespace MetaReceiptsLite
     {
         private const int PreviewRowCap = 5000;
 
+        // Brand palette (matches Excel export header; cheap solid fills for old GPUs)
+        private static readonly Color ColorNavy = Color.FromArgb(31, 78, 120);      // #1F4E78
+        private static readonly Color ColorExcel = Color.FromArgb(33, 115, 70);     // #217346
+        private static readonly Color ColorCanvas = Color.FromArgb(245, 247, 250);  // #F5F7FA
+        private static readonly Color ColorPanel = Color.White;
+        private static readonly Color ColorBorder = Color.FromArgb(210, 218, 226);
+        private static readonly Color ColorMuted = Color.FromArgb(90, 105, 120);
+
         private readonly List<Receipt> _receipts = new List<Receipt>();
         private readonly List<LineItem> _items = new List<LineItem>();
         private readonly HashSet<string> _transactionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        private ToolStrip _toolbar;
-        private ToolStripButton _btnAdd;
-        private ToolStripButton _btnExportExcel;
-        private ToolStripDropDownButton _btnExportCsv;
-        private ToolStripButton _btnClear;
-        private ToolStripButton _btnCancel;
-        private ToolStripButton _btnRemove;
-        private ToolStripLabel _hint;
+        private Panel _header;
+        private Label _brandTitle;
+        private Label _brandSub;
+        private FlowLayoutPanel _actions;
+        private Button _btnAdd;
+        private Button _btnExportExcel;
+        private Button _btnExportCsv;
+        private Button _btnClear;
+        private Button _btnCancel;
+        private Button _btnRemove;
+        private ContextMenuStrip _csvMenu;
+
+        private Panel _content;
+        private Panel _dropZone;
+        private Label _dropTitle;
+        private Label _dropHint;
+        private Button _dropBrowse;
+
         private SplitContainer _split;
+        private Label _lblReceipts;
+        private Label _lblItems;
         private DataGridView _gridReceipts;
         private DataGridView _gridItems;
         private TextBox _filterCampaign;
@@ -37,116 +57,319 @@ namespace MetaReceiptsLite
 
         private CancellationTokenSource _cts;
         private bool _busy;
+        private bool _dragHighlight;
 
         public MainForm()
         {
             Text = "Meta Receipts -> Excel";
-            Width = 1000;
-            Height = 640;
-            MinimumSize = new Size(800, 480);
+            Width = 1040;
+            Height = 680;
+            MinimumSize = new Size(860, 520);
             StartPosition = FormStartPosition.CenterScreen;
             AutoScaleMode = AutoScaleMode.Dpi;
             Font = SystemFonts.MessageBoxFont;
+            BackColor = ColorCanvas;
             AllowDrop = true;
+            DoubleBuffered = true;
+
+            try
+            {
+                var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AppIcon.ico");
+                if (File.Exists(ico))
+                    Icon = new Icon(ico);
+            }
+            catch
+            {
+                // ignore missing icon
+            }
 
             BuildUi();
             WireEvents();
             UpdateStatus();
             SetBusy(false);
+            UpdateEmptyState();
         }
 
         private void BuildUi()
         {
-            _toolbar = new ToolStrip
-            {
-                GripStyle = ToolStripGripStyle.Hidden,
-                RenderMode = ToolStripRenderMode.System
-            };
-            _btnAdd = new ToolStripButton("Add PDFs...");
-            _btnExportExcel = new ToolStripButton("Export Excel...");
-            _btnExportCsv = new ToolStripDropDownButton("Export CSV");
-            _btnExportCsv.DropDownItems.Add("Line items...", null, (s, e) => ExportCsv(CsvMode.LineItems));
-            _btnExportCsv.DropDownItems.Add("Receipts...", null, (s, e) => ExportCsv(CsvMode.Receipts));
-            _btnExportCsv.DropDownItems.Add("Both (folder)...", null, (s, e) => ExportCsv(CsvMode.BothFolder));
-            _btnExportCsv.DropDownItems.Add("Both (zip)...", null, (s, e) => ExportCsv(CsvMode.BothZip));
-            _btnClear = new ToolStripButton("Clear");
-            _btnCancel = new ToolStripButton("Cancel");
-            _btnRemove = new ToolStripButton("Remove selected receipt");
-            _hint = new ToolStripLabel("  Drag & drop Meta receipt PDFs anywhere in this window");
-            _hint.ForeColor = SystemColors.GrayText;
+            BuildHeader();
+            BuildContent();
+            BuildStatus();
 
-            _toolbar.Items.AddRange(new ToolStripItem[]
+            Controls.Add(_content);
+            Controls.Add(_header);
+            Controls.Add(_status);
+            _header.BringToFront();
+            _status.BringToFront();
+        }
+
+        private void BuildHeader()
+        {
+            _header = new Panel
             {
-                _btnAdd, _btnExportExcel, _btnExportCsv, _btnClear, _btnCancel,
-                new ToolStripSeparator(), _btnRemove, _hint
-            });
+                Dock = DockStyle.Top,
+                Height = 86,
+                BackColor = ColorNavy,
+                Padding = new Padding(16, 10, 16, 10)
+            };
+
+            _brandTitle = new Label
+            {
+                AutoSize = true,
+                Text = "Meta Receipts -> Excel",
+                ForeColor = Color.White,
+                Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 14f, FontStyle.Bold),
+                Location = new Point(16, 12),
+                BackColor = Color.Transparent
+            };
+            _brandSub = new Label
+            {
+                AutoSize = true,
+                Text = "Convert Meta Ads receipt PDFs into Excel or CSV",
+                ForeColor = Color.FromArgb(190, 210, 230),
+                Location = new Point(18, 40),
+                BackColor = Color.Transparent
+            };
+
+            _actions = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 36,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Padding = new Padding(8, 2, 8, 2),
+                BackColor = Color.FromArgb(24, 62, 96)
+            };
+
+            _btnAdd = MakeButton("Add PDFs...", ColorExcel, Color.White, true);
+            _btnExportExcel = MakeButton("Export Excel...", Color.FromArgb(46, 100, 150), Color.White, true);
+            _btnExportCsv = MakeButton("Export CSV ▾", Color.FromArgb(46, 100, 150), Color.White, true);
+            _btnClear = MakeButton("Clear", Color.FromArgb(70, 90, 110), Color.White, false);
+            _btnCancel = MakeButton("Cancel", Color.FromArgb(150, 70, 70), Color.White, false);
+            _btnRemove = MakeButton("Remove selected", Color.FromArgb(70, 90, 110), Color.White, false);
+
+            _csvMenu = new ContextMenuStrip();
+            _csvMenu.Items.Add("Line items...", null, (s, e) => ExportCsv(CsvMode.LineItems));
+            _csvMenu.Items.Add("Receipts...", null, (s, e) => ExportCsv(CsvMode.Receipts));
+            _csvMenu.Items.Add("Both (folder)...", null, (s, e) => ExportCsv(CsvMode.BothFolder));
+            _csvMenu.Items.Add("Both (zip)...", null, (s, e) => ExportCsv(CsvMode.BothZip));
+
+            _actions.Controls.Add(_btnAdd);
+            _actions.Controls.Add(_btnExportExcel);
+            _actions.Controls.Add(_btnExportCsv);
+            _actions.Controls.Add(_btnClear);
+            _actions.Controls.Add(_btnCancel);
+            _actions.Controls.Add(_btnRemove);
+
+            _header.Controls.Add(_actions);
+            _header.Controls.Add(_brandTitle);
+            _header.Controls.Add(_brandSub);
+        }
+
+        private void BuildContent()
+        {
+            _content = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(12, 10, 12, 8),
+                BackColor = ColorCanvas
+            };
 
             _split = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 260
+                SplitterDistance = 280,
+                SplitterWidth = 6,
+                BackColor = ColorCanvas,
+                Panel1MinSize = 120,
+                Panel2MinSize = 120
             };
 
+            // Receipts section
+            var top = new Panel { Dock = DockStyle.Fill, BackColor = ColorCanvas, Padding = new Padding(0, 0, 0, 4) };
+            _lblReceipts = SectionLabel("Receipts");
+            var receiptsHost = CardHost();
             _gridReceipts = CreateGrid();
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "InvoiceNo", HeaderText = "Invoice No", Width = 140 });
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Date", HeaderText = "Date", Width = 120 });
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Reference", HeaderText = "Reference", Width = 100 });
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Currency", HeaderText = "Currency", Width = 70 });
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Billed", HeaderText = "Billed", Width = 90 });
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Rows", HeaderText = "Rows", Width = 50 });
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "RowsTotal", HeaderText = "Rows total", Width = 90 });
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Check", HeaderText = "Check", Width = 120 });
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn { Name = "File", HeaderText = "File", Width = 220, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            _gridReceipts.Columns.Add(Col("InvoiceNo", "Invoice No", 140));
+            _gridReceipts.Columns.Add(Col("Date", "Date", 120));
+            _gridReceipts.Columns.Add(Col("Reference", "Reference", 100));
+            _gridReceipts.Columns.Add(Col("Currency", "Currency", 70));
+            _gridReceipts.Columns.Add(Col("Billed", "Billed", 90));
+            _gridReceipts.Columns.Add(Col("Rows", "Rows", 50));
+            _gridReceipts.Columns.Add(Col("RowsTotal", "Rows total", 90));
+            _gridReceipts.Columns.Add(Col("Check", "Check", 120));
+            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "File",
+                HeaderText = "File",
+                Width = 220,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            });
+            receiptsHost.Controls.Add(_gridReceipts);
+            top.Controls.Add(receiptsHost);
+            top.Controls.Add(_lblReceipts);
 
-            var bottomPanel = new Panel { Dock = DockStyle.Fill };
-            var filterPanel = new Panel { Dock = DockStyle.Top, Height = 28 };
+            // Line items section
+            var bottom = new Panel { Dock = DockStyle.Fill, BackColor = ColorCanvas, Padding = new Padding(0, 4, 0, 0) };
+            var filterBar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 34,
+                BackColor = ColorCanvas
+            };
+            _lblItems = SectionLabel("Line items");
+            _lblItems.Dock = DockStyle.Left;
+            _lblItems.AutoSize = false;
+            _lblItems.Width = 110;
+            _lblItems.TextAlign = ContentAlignment.MiddleLeft;
             _lblFilter = new Label
             {
-                Text = "Campaign filter:",
+                Text = "Campaign filter",
                 AutoSize = true,
-                Left = 4,
-                Top = 6
+                ForeColor = ColorMuted,
+                Location = new Point(120, 8)
             };
             _filterCampaign = new TextBox
             {
-                Left = 110,
-                Top = 3,
-                Width = 280
+                Width = 260,
+                Location = new Point(230, 5),
+                BorderStyle = BorderStyle.FixedSingle
             };
-            filterPanel.Controls.Add(_lblFilter);
-            filterPanel.Controls.Add(_filterCampaign);
+            filterBar.Controls.Add(_lblItems);
+            filterBar.Controls.Add(_lblFilter);
+            filterBar.Controls.Add(_filterCampaign);
 
+            var itemsHost = CardHost();
             _gridItems = CreateGrid();
-            _gridItems.Dock = DockStyle.Fill;
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "InvoiceNo", HeaderText = "Invoice No", Width = 130 });
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Campaign", HeaderText = "Campaign", Width = 100 });
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PeriodFrom", HeaderText = "Period from", Width = 120 });
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PeriodTo", HeaderText = "Period to", Width = 120 });
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "AdSet", HeaderText = "Ad set", Width = 160 });
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Currency", HeaderText = "Currency", Width = 70 });
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Impressions", HeaderText = "Impressions", Width = 90 });
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Cost", HeaderText = "Cost", Width = 80 });
-            _gridItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CPM", HeaderText = "CPM", Width = 80, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            _gridItems.Columns.Add(Col("InvoiceNo", "Invoice No", 130));
+            _gridItems.Columns.Add(Col("Campaign", "Campaign", 110));
+            _gridItems.Columns.Add(Col("PeriodFrom", "Period from", 120));
+            _gridItems.Columns.Add(Col("PeriodTo", "Period to", 120));
+            _gridItems.Columns.Add(Col("AdSet", "Ad set", 160));
+            _gridItems.Columns.Add(Col("Currency", "Currency", 70));
+            _gridItems.Columns.Add(Col("Impressions", "Impressions", 90));
+            _gridItems.Columns.Add(Col("Cost", "Cost", 80));
+            _gridItems.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "CPM",
+                HeaderText = "CPM",
+                Width = 80,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            });
+            itemsHost.Controls.Add(_gridItems);
+            bottom.Controls.Add(itemsHost);
+            bottom.Controls.Add(filterBar);
 
-            bottomPanel.Controls.Add(_gridItems);
-            bottomPanel.Controls.Add(filterPanel);
+            _split.Panel1.Controls.Add(top);
+            _split.Panel2.Controls.Add(bottom);
 
-            _split.Panel1.Controls.Add(_gridReceipts);
-            _split.Panel2.Controls.Add(bottomPanel);
+            // Empty drop zone (shown when no data)
+            _dropZone = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = ColorPanel,
+                Visible = true
+            };
+            _dropZone.Paint += DropZone_Paint;
 
-            _status = new StatusStrip { RenderMode = ToolStripRenderMode.System };
-            _statusLabel = new ToolStripStatusLabel("Ready") { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
-            _status.Items.Add(_statusLabel);
+            _dropTitle = new Label
+            {
+                AutoSize = true,
+                Text = "Drop Meta receipt PDFs here",
+                Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 13f, FontStyle.Bold),
+                ForeColor = ColorNavy,
+                BackColor = Color.Transparent
+            };
+            _dropHint = new Label
+            {
+                AutoSize = true,
+                Text = "or click Browse to select files / folders — processing stays off the UI thread",
+                ForeColor = ColorMuted,
+                BackColor = Color.Transparent
+            };
+            _dropBrowse = MakeButton("Browse PDFs...", ColorExcel, Color.White, true);
+            _dropBrowse.Width = 140;
 
-            Controls.Add(_split);
-            Controls.Add(_toolbar);
-            Controls.Add(_status);
-            _toolbar.Dock = DockStyle.Top;
-            _status.Dock = DockStyle.Bottom;
+            _dropZone.Controls.Add(_dropTitle);
+            _dropZone.Controls.Add(_dropHint);
+            _dropZone.Controls.Add(_dropBrowse);
+            _dropZone.Resize += (s, e) => LayoutDropZone();
+
+            _content.Controls.Add(_dropZone);
+            _content.Controls.Add(_split);
+            LayoutDropZone();
         }
 
-        private static DataGridView CreateGrid()
+        private void BuildStatus()
+        {
+            _status = new StatusStrip
+            {
+                BackColor = Color.FromArgb(236, 240, 244),
+                SizingGrip = true,
+                RenderMode = ToolStripRenderMode.System
+            };
+            _statusLabel = new ToolStripStatusLabel("Ready")
+            {
+                Spring = true,
+                TextAlign = ContentAlignment.MiddleLeft,
+                ForeColor = ColorMuted
+            };
+            _status.Items.Add(_statusLabel);
+        }
+
+        private static Label SectionLabel(string text)
+        {
+            return new Label
+            {
+                Text = text,
+                Dock = DockStyle.Top,
+                Height = 24,
+                Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Bold),
+                ForeColor = ColorNavy,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(2, 0, 0, 0)
+            };
+        }
+
+        private static Panel CardHost()
+        {
+            return new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = ColorPanel,
+                Padding = new Padding(1),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+        }
+
+        private static Button MakeButton(string text, Color back, Color fore, bool primary)
+        {
+            var b = new Button
+            {
+                Text = text,
+                AutoSize = true,
+                MinimumSize = new Size(primary ? 110 : 90, 28),
+                Height = 28,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = back,
+                ForeColor = fore,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 2, 8, 2),
+                UseVisualStyleBackColor = false
+            };
+            b.FlatAppearance.BorderSize = 0;
+            b.FlatAppearance.MouseOverBackColor = ControlPaint.Light(back, 0.12f);
+            b.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(back, 0.08f);
+            return b;
+        }
+
+        private static DataGridViewTextBoxColumn Col(string name, string header, int width)
+        {
+            return new DataGridViewTextBoxColumn { Name = name, HeaderText = header, Width = width };
+        }
+
+        private DataGridView CreateGrid()
         {
             var g = new DataGridView
             {
@@ -160,16 +383,72 @@ namespace MetaReceiptsLite
                 MultiSelect = true,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None,
                 AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None,
-                BackgroundColor = SystemColors.Window,
-                BorderStyle = BorderStyle.FixedSingle
+                BackgroundColor = ColorPanel,
+                BorderStyle = BorderStyle.None,
+                GridColor = ColorBorder,
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = ColorNavy,
+                    ForeColor = Color.White,
+                    Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleLeft,
+                    SelectionBackColor = ColorNavy,
+                    SelectionForeColor = Color.White,
+                    Padding = new Padding(4, 2, 4, 2)
+                },
+                ColumnHeadersHeight = 28,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = ColorPanel,
+                    ForeColor = Color.FromArgb(30, 40, 50),
+                    SelectionBackColor = Color.FromArgb(210, 228, 242),
+                    SelectionForeColor = Color.FromArgb(20, 40, 60),
+                    Padding = new Padding(4, 1, 4, 1)
+                },
+                AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(248, 250, 252),
+                    ForeColor = Color.FromArgb(30, 40, 50),
+                    SelectionBackColor = Color.FromArgb(210, 228, 242),
+                    SelectionForeColor = Color.FromArgb(20, 40, 60)
+                },
+                RowTemplate = { Height = 24 }
             };
             return g;
+        }
+
+        private void LayoutDropZone()
+        {
+            if (_dropZone == null) return;
+            int cx = _dropZone.ClientSize.Width / 2;
+            int cy = _dropZone.ClientSize.Height / 2;
+            _dropTitle.Location = new Point(cx - _dropTitle.Width / 2, cy - 50);
+            _dropHint.Location = new Point(cx - _dropHint.Width / 2, cy - 18);
+            _dropBrowse.Location = new Point(cx - _dropBrowse.Width / 2, cy + 18);
+        }
+
+        private void DropZone_Paint(object sender, PaintEventArgs e)
+        {
+            var rect = _dropZone.ClientRectangle;
+            rect.Inflate(-18, -18);
+            using (var pen = new Pen(_dragHighlight ? ColorExcel : ColorBorder, _dragHighlight ? 2.5f : 1.5f))
+            {
+                pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                e.Graphics.DrawRectangle(pen, rect);
+            }
         }
 
         private void WireEvents()
         {
             _btnAdd.Click += (s, e) => AddPdfsDialog();
+            _dropBrowse.Click += (s, e) => AddPdfsDialog();
             _btnExportExcel.Click += (s, e) => ExportExcel();
+            _btnExportCsv.Click += (s, e) =>
+            {
+                _csvMenu.Show(_btnExportCsv, new Point(0, _btnExportCsv.Height));
+            };
             _btnClear.Click += (s, e) => ClearAll();
             _btnCancel.Click += (s, e) =>
             {
@@ -177,18 +456,39 @@ namespace MetaReceiptsLite
             };
             _btnRemove.Click += (s, e) => RemoveSelectedReceipts();
             _filterCampaign.TextChanged += (s, e) => RefreshItemGrid();
+
             DragEnter += MainForm_DragEnter;
             DragDrop += MainForm_DragDrop;
+            DragLeave += (s, e) => SetDragHighlight(false);
+            _dropZone.AllowDrop = true;
+            _dropZone.DragEnter += MainForm_DragEnter;
+            _dropZone.DragDrop += MainForm_DragDrop;
+            _dropZone.DragLeave += (s, e) => SetDragHighlight(false);
+            _content.AllowDrop = true;
+            _content.DragEnter += MainForm_DragEnter;
+            _content.DragDrop += MainForm_DragDrop;
+        }
+
+        private void SetDragHighlight(bool on)
+        {
+            if (_dragHighlight == on) return;
+            _dragHighlight = on;
+            if (_dropZone != null && _dropZone.Visible)
+                _dropZone.Invalidate();
         }
 
         private void MainForm_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
                 e.Effect = DragDropEffects.Copy;
+                SetDragHighlight(true);
+            }
         }
 
         private void MainForm_DragDrop(object sender, DragEventArgs e)
         {
+            SetDragHighlight(false);
             var paths = e.Data.GetData(DataFormats.FileDrop) as string[];
             if (paths == null || paths.Length == 0) return;
             var pdfs = ExpandPaths(paths);
@@ -292,6 +592,7 @@ namespace MetaReceiptsLite
                 SetBusy(false);
                 RefreshAllGrids();
                 UpdateStatus();
+                UpdateEmptyState();
                 if (errors.Count > 0)
                 {
                     var sb = new StringBuilder();
@@ -336,6 +637,19 @@ namespace MetaReceiptsLite
                 _gridItems.ResumeLayout();
                 _gridReceipts.ResumeLayout();
                 ResumeLayout();
+            }
+            UpdateEmptyState();
+        }
+
+        private void UpdateEmptyState()
+        {
+            bool empty = _receipts.Count == 0;
+            _dropZone.Visible = empty;
+            _split.Visible = !empty;
+            if (empty)
+            {
+                _dropZone.BringToFront();
+                LayoutDropZone();
             }
         }
 
@@ -452,7 +766,7 @@ namespace MetaReceiptsLite
             using (var dlg = new SaveFileDialog())
             {
                 dlg.Filter = "Excel workbook (*.xlsx)|*.xlsx";
-                dlg.FileName = "MetaReceipts.xlsx";
+                dlg.FileName = ExportFileName("MetaReceipts", ".xlsx");
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
                 try
                 {
@@ -489,7 +803,7 @@ namespace MetaReceiptsLite
                         using (var dlg = new SaveFileDialog())
                         {
                             dlg.Filter = "CSV (*.csv)|*.csv";
-                            dlg.FileName = "line-items.csv";
+                            dlg.FileName = ExportFileName("line-items", ".csv");
                             if (dlg.ShowDialog(this) != DialogResult.OK) return;
                             CsvExporter.ExportLineItems(dlg.FileName, _items);
                         }
@@ -498,7 +812,7 @@ namespace MetaReceiptsLite
                         using (var dlg = new SaveFileDialog())
                         {
                             dlg.Filter = "CSV (*.csv)|*.csv";
-                            dlg.FileName = "receipts.csv";
+                            dlg.FileName = ExportFileName("receipts", ".csv");
                             if (dlg.ShowDialog(this) != DialogResult.OK) return;
                             CsvExporter.ExportReceipts(dlg.FileName, _receipts);
                         }
@@ -515,7 +829,7 @@ namespace MetaReceiptsLite
                         using (var dlg = new SaveFileDialog())
                         {
                             dlg.Filter = "ZIP (*.zip)|*.zip";
-                            dlg.FileName = "meta-receipts-export.zip";
+                            dlg.FileName = ExportFileName("meta-receipts-export", ".zip");
                             if (dlg.ShowDialog(this) != DialogResult.OK) return;
                             CsvExporter.ExportBoth(dlg.FileName, _receipts, _items, true);
                         }
@@ -539,12 +853,32 @@ namespace MetaReceiptsLite
         {
             _busy = busy;
             _btnAdd.Enabled = !busy;
+            _dropBrowse.Enabled = !busy;
             _btnExportExcel.Enabled = !busy;
             _btnExportCsv.Enabled = !busy;
             _btnClear.Enabled = !busy;
             _btnRemove.Enabled = !busy;
             _btnCancel.Enabled = busy;
             UseWaitCursor = busy;
+        }
+
+        private static string ExportFileName(string prefix, string extension)
+        {
+            if (string.IsNullOrEmpty(extension)) extension = "";
+            if (!extension.StartsWith(".", StringComparison.Ordinal))
+                extension = "." + extension;
+            var stamp = DateTime.Now.ToString("yyyy-MM-dd_HHmm", CultureInfo.InvariantCulture);
+            return prefix + "_" + stamp + extension;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_cts != null) { _cts.Dispose(); _cts = null; }
+                if (_csvMenu != null) { _csvMenu.Dispose(); _csvMenu = null; }
+            }
+            base.Dispose(disposing);
         }
     }
 }

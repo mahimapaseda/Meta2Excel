@@ -71,7 +71,7 @@ namespace MetaReceiptsLite
             {
                 var zipPath = folderOrZip;
                 if (!zipPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                    zipPath = Path.Combine(folderOrZip, "meta-receipts-export.zip");
+                    zipPath = Path.Combine(folderOrZip, TimestampedName("meta-receipts-export", ".zip"));
 
                 var dir = Path.GetDirectoryName(zipPath);
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -81,8 +81,9 @@ namespace MetaReceiptsLite
                 Directory.CreateDirectory(tmp);
                 try
                 {
-                    var receiptsPath = Path.Combine(tmp, "receipts.csv");
-                    var itemsPath = Path.Combine(tmp, "line-items.csv");
+                    var stamp = DateTime.Now.ToString("yyyy-MM-dd_HHmm", CultureInfo.InvariantCulture);
+                    var receiptsPath = Path.Combine(tmp, "receipts_" + stamp + ".csv");
+                    var itemsPath = Path.Combine(tmp, "line-items_" + stamp + ".csv");
                     ExportReceipts(receiptsPath, receipts);
                     ExportLineItems(itemsPath, items);
                     if (File.Exists(zipPath)) File.Delete(zipPath);
@@ -97,8 +98,9 @@ namespace MetaReceiptsLite
             {
                 if (!Directory.Exists(folderOrZip))
                     Directory.CreateDirectory(folderOrZip);
-                ExportReceipts(Path.Combine(folderOrZip, "receipts.csv"), receipts);
-                ExportLineItems(Path.Combine(folderOrZip, "line-items.csv"), items);
+                var stamp = DateTime.Now.ToString("yyyy-MM-dd_HHmm", CultureInfo.InvariantCulture);
+                ExportReceipts(Path.Combine(folderOrZip, "receipts_" + stamp + ".csv"), receipts);
+                ExportLineItems(Path.Combine(folderOrZip, "line-items_" + stamp + ".csv"), items);
             }
         }
 
@@ -131,6 +133,12 @@ namespace MetaReceiptsLite
         {
             if (dt == default(DateTime)) return string.Empty;
             return dt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        }
+
+        private static string TimestampedName(string prefix, string extension)
+        {
+            var stamp = DateTime.Now.ToString("yyyy-MM-dd_HHmm", CultureInfo.InvariantCulture);
+            return prefix + "_" + stamp + extension;
         }
     }
 }
