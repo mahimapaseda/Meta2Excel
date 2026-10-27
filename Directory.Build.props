@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <!-- Provides net48 reference assemblies without a machine-wide Developer Pack install. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

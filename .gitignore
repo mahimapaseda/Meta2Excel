@@ -1,0 +1,35 @@
+## Build
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.DotSettings.user
+
+## NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Test / temp
+TestResults/
+*.trx
+*.xlsx
+!**/Samples/**
+*.zip
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Local vendor clones (prefer NuGet PdfPig package)
+third_party/

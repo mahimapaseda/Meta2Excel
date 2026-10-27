@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>10.0</LangVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>MetaReceiptsLite</RootNamespace>
+    <AssemblyName>MetaReceiptsLite</AssemblyName>
+    <ApplicationIcon />
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Deterministic>true</Deterministic>
+    <DebugType Condition="'$(Configuration)'=='Release'">none</DebugType>
+    <DebugSymbols Condition="'$(Configuration)'=='Release'">false</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 0.102.x avoids SixLabors.Fonts (~1 MB) to stay under the 15 MB deploy budget -->
+    <PackageReference Include="ClosedXML" Version="0.102.3" />
+    <!-- Official PdfPig package ID (namespace remains UglyToad.PdfPig). Do not use UglyToad.PdfPig on nuget.org — that ID was taken over. -->
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+</Project>
