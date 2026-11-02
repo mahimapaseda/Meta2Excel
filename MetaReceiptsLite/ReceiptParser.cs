@@ -30,6 +30,10 @@ namespace MetaReceiptsLite
         private static readonly Regex RxLoneAmountOnly = new Regex(
             @"^(?:[€£¥₹$]|Rs\.?|USD|EUR|GBP|LKR|INR)?\s*[\d.,]+\s*(?:USD|EUR|GBP|LKR|INR)?$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        // Meta sometimes emits Paid$109.67 (no space) or Paid $109.67 on a header line
+        private static readonly Regex RxPaidAmount = new Regex(
+            @"Paid\s*((?:USD|EUR|GBP|LKR|INR|AUD|CAD|SGD|AED|JPY|Rs\.?|[€£¥₹$])?\s*[\d.,]+)",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         private static readonly CultureInfo En = CultureInfo.GetCultureInfo("en-US");
 
@@ -125,6 +129,10 @@ namespace MetaReceiptsLite
                 // Header fields (also appear before Campaigns)
                 Match m;
 
+                // Capture Paid$109.67 / Paid $109.67 anywhere in the header
+                if (!inCampaigns)
+                    TryApplyPaidLabel(line, receipt);
+
                 m = RxReceiptFor.Match(line);
                 if (m.Success)
                 {
@@ -199,17 +207,18 @@ namespace MetaReceiptsLite
                     receipt.ReferenceNumber = m.Groups[1].Value;
                     // Merged Y-line may include billed amount on the right
                     var afterRef = line.Substring(m.Index + m.Length).Trim();
-                    if (afterRef.Length > 0 && receipt.AmountBilled == 0m)
-                    {
-                        var money = CurrencyDetector.TryParseMoney(afterRef);
-                        if (money.Success)
-                        {
-                            receipt.AmountBilled = money.Amount;
-                            receipt.CurrencyCode = money.CurrencyCode;
-                            receipt.CurrencySymbol = money.CurrencySymbol;
-                        }
-                    }
+                    if (afterRef.Length > 0)
+                        TryApplyBilledMoney(afterRef, receipt);
                     continue;
+                }
+
+                // Some receipts put the Paid total alone between Reference and Transaction ID
+                // (threshold sentence then has no "$X" between "your" and "payment threshold").
+                if (!inCampaigns && receipt.AmountBilled == 0m && IsLoneCampaignSubtotal(line))
+                {
+                    TryApplyBilledMoney(line, receipt);
+                    if (receipt.AmountBilled != 0m)
+                        continue;
                 }
 
                 if (line.StartsWith("Transaction ID", StringComparison.OrdinalIgnoreCase))
@@ -230,13 +239,10 @@ namespace MetaReceiptsLite
                 // Threshold sentence may appear alone or merged
                 if (line.IndexOf("payment threshold", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
+                    TryApplyPaidLabel(line, receipt);
                     var thr = CurrencyDetector.TryParseFromThreshold(line);
                     if (thr.Success)
-                    {
-                        receipt.AmountBilled = thr.Amount;
-                        receipt.CurrencyCode = thr.CurrencyCode;
-                        receipt.CurrencySymbol = thr.CurrencySymbol;
-                    }
+                        ApplyBilled(receipt, thr);
                     m = RxTransactionId.Match(line);
                     if (m.Success && string.IsNullOrEmpty(receipt.TransactionId))
                         receipt.TransactionId = m.Groups[1].Value;
@@ -355,15 +361,13 @@ namespace MetaReceiptsLite
                 expectTransactionId = false;
             }
 
+            TryApplyPaidLabel(line, receipt);
+
             if (line.IndexOf("payment threshold", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 var thr = CurrencyDetector.TryParseFromThreshold(line);
                 if (thr.Success)
-                {
-                    receipt.AmountBilled = thr.Amount;
-                    receipt.CurrencyCode = thr.CurrencyCode;
-                    receipt.CurrencySymbol = thr.CurrencySymbol;
-                }
+                    ApplyBilled(receipt, thr);
                 expectTransactionId = false;
             }
             else if (!m.Success)
@@ -372,19 +376,45 @@ namespace MetaReceiptsLite
             }
             else
             {
-                // txn found; remainder may have threshold
+                // txn found; remainder may have threshold / Paid
                 var rest = line.Substring(m.Index + m.Length).Trim();
-                if (rest.Length > 0 && rest.IndexOf("threshold", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (rest.Length > 0)
                 {
-                    var thr = CurrencyDetector.TryParseFromThreshold(rest);
-                    if (thr.Success)
+                    TryApplyPaidLabel(rest, receipt);
+                    if (rest.IndexOf("threshold", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        receipt.AmountBilled = thr.Amount;
-                        receipt.CurrencyCode = thr.CurrencyCode;
-                        receipt.CurrencySymbol = thr.CurrencySymbol;
+                        var thr = CurrencyDetector.TryParseFromThreshold(rest);
+                        if (thr.Success)
+                            ApplyBilled(receipt, thr);
                     }
                 }
             }
+        }
+
+        private static void TryApplyPaidLabel(string line, Receipt receipt)
+        {
+            if (receipt == null || receipt.AmountBilled != 0m || string.IsNullOrEmpty(line)) return;
+            var m = RxPaidAmount.Match(line);
+            if (!m.Success) return;
+            TryApplyBilledMoney(m.Groups[1].Value, receipt);
+        }
+
+        private static void TryApplyBilledMoney(string text, Receipt receipt)
+        {
+            if (receipt == null || receipt.AmountBilled != 0m || string.IsNullOrWhiteSpace(text)) return;
+            var money = CurrencyDetector.TryParseMoney(text);
+            if (money.Success)
+                ApplyBilled(receipt, money);
+        }
+
+        private static void ApplyBilled(Receipt receipt, MoneyParseResult money)
+        {
+            if (receipt == null || money == null || !money.Success) return;
+            // Prefer the first explicit billed/Paid amount; do not overwrite
+            if (receipt.AmountBilled != 0m) return;
+            receipt.AmountBilled = money.Amount;
+            receipt.CurrencyCode = money.CurrencyCode;
+            receipt.CurrencySymbol = money.CurrencySymbol;
         }
 
         private static bool IsLoneCampaignSubtotal(string line)

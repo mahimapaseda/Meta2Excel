@@ -95,6 +95,65 @@ namespace MetaReceiptsLite.Tests
         }
 
         [Fact]
+        public void ParseLines_LonePaidAmountBeforeTransaction_WhenThresholdHasNoMoney()
+        {
+            // Layout seen on 2026-10-28 Meta receipt: Paid total on its own line;
+            // threshold sentence has no "$X" between "your" and "payment threshold".
+            var lines = new List<string>
+            {
+                "Receipt for TEST ACCOUNT",
+                "Account ID: 1234567890",
+                "Invoice/payment date",
+                "28 Oct 2026, 19:51",
+                "Payment method Paid",
+                "Mastercard ···· 3769",
+                "Reference number: DWLUNDAME4",
+                "$109.67",
+                "Transaction ID",
+                "29426072513745916-29251418831211292 You're being billed because you've reached your payment threshold.",
+                "Product type",
+                "Meta ads",
+                "Campaigns",
+                "(Wen) campaign 01 OCT",
+                "From 25 Oct 2026, 00:00 to 28 Oct 2026, 19:51",
+                "wen - oct ad set 01 9,346 Impressions $109.67",
+                "Invoice no. FBADS-323-106702604"
+            };
+
+            var r = ReceiptParser.ParseLines(lines);
+            Assert.Equal(109.67m, r.AmountBilled);
+            Assert.Equal(109.67m, r.ItemsTotal);
+            Assert.Equal("OK", r.Check);
+            Assert.Equal("USD", r.CurrencyCode);
+        }
+
+        [Fact]
+        public void ParseLines_PaidLabelMashedWithAmount()
+        {
+            var lines = new List<string>
+            {
+                "Receipt for TEST ACCOUNT",
+                "Account ID: 1234567890",
+                "Invoice/payment date",
+                "28 Oct 2026, 19:51",
+                "Payment method",
+                "Visa ···· 1234",
+                "Reference number: ABC123",
+                "Transaction ID",
+                "11111111111111111-22222222222222222 Product type Meta adsPaid$55.50 You're being billed because you've reached your payment threshold.",
+                "Campaigns",
+                "(A) campaign",
+                "From 25 Oct 2026, 00:00 to 28 Oct 2026, 19:51",
+                "ad set 100 Impressions $55.50",
+                "Invoice no. FBADS-323-999000010"
+            };
+
+            var r = ReceiptParser.ParseLines(lines);
+            Assert.Equal(55.50m, r.AmountBilled);
+            Assert.Equal("OK", r.Check);
+        }
+
+        [Fact]
         public void ParseLines_NoCampaigns_Throws()
         {
             var lines = BaseHeader("$1.00", "70000000000000001-70000000000000002");
