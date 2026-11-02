@@ -85,6 +85,7 @@ namespace MetaReceiptsLite
 
             BuildUi();
             WireEvents();
+            EnableFileDrop(this);
             UpdateStatus();
             SetBusy(false);
             UpdateEmptyState();
@@ -456,17 +457,26 @@ namespace MetaReceiptsLite
             };
             _btnRemove.Click += (s, e) => RemoveSelectedReceipts();
             _filterCampaign.TextChanged += (s, e) => RefreshItemGrid();
+        }
 
-            DragEnter += MainForm_DragEnter;
-            DragDrop += MainForm_DragDrop;
-            DragLeave += (s, e) => SetDragHighlight(false);
-            _dropZone.AllowDrop = true;
-            _dropZone.DragEnter += MainForm_DragEnter;
-            _dropZone.DragDrop += MainForm_DragDrop;
-            _dropZone.DragLeave += (s, e) => SetDragHighlight(false);
-            _content.AllowDrop = true;
-            _content.DragEnter += MainForm_DragEnter;
-            _content.DragDrop += MainForm_DragDrop;
+        /// <summary>
+        /// WinForms does not bubble file drops from children without AllowDrop.
+        /// Wire every descendant so drops on labels, buttons, and grids are accepted.
+        /// </summary>
+        private void EnableFileDrop(Control root)
+        {
+            if (root == null) return;
+            root.AllowDrop = true;
+            root.DragEnter -= MainForm_DragEnter;
+            root.DragOver -= MainForm_DragOver;
+            root.DragDrop -= MainForm_DragDrop;
+            root.DragLeave -= MainForm_DragLeave;
+            root.DragEnter += MainForm_DragEnter;
+            root.DragOver += MainForm_DragOver;
+            root.DragDrop += MainForm_DragDrop;
+            root.DragLeave += MainForm_DragLeave;
+            foreach (Control child in root.Controls)
+                EnableFileDrop(child);
         }
 
         private void SetDragHighlight(bool on)
@@ -479,21 +489,51 @@ namespace MetaReceiptsLite
 
         private void MainForm_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 e.Effect = DragDropEffects.Copy;
                 SetDragHighlight(true);
             }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        private void MainForm_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+                e.Effect = DragDropEffects.Copy;
+            else
+                e.Effect = DragDropEffects.None;
+        }
+
+        private void MainForm_DragLeave(object sender, EventArgs e)
+        {
+            SetDragHighlight(false);
         }
 
         private void MainForm_DragDrop(object sender, DragEventArgs e)
         {
             SetDragHighlight(false);
+            if (e.Data == null) return;
             var paths = e.Data.GetData(DataFormats.FileDrop) as string[];
-            if (paths == null || paths.Length == 0) return;
+            if (paths == null || paths.Length == 0)
+            {
+                MessageBox.Show(this,
+                    "No files were received from the drop.",
+                    Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             var pdfs = ExpandPaths(paths);
-            if (pdfs.Count > 0)
-                BeginParse(pdfs);
+            if (pdfs.Count == 0)
+            {
+                MessageBox.Show(this,
+                    "No PDF files found. Drop .pdf files or a folder that contains PDFs.",
+                    Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            BeginParse(pdfs);
         }
 
         private void AddPdfsDialog()
