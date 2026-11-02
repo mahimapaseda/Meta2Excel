@@ -180,18 +180,27 @@ namespace MetaReceiptsLite
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 280,
                 SplitterWidth = 6,
                 BackColor = ColorCanvas,
-                Panel1MinSize = 120,
+                Panel1MinSize = 100,
                 Panel2MinSize = 120
+                // Keep Visible=true always so Panel1/Panel2 children get a real layout size.
+                // Hiding the split while empty leaves Panel1 controls stuck at 0x0.
             };
 
-            // Receipts section
+            // Receipts section — add Dock.Top before Dock.Fill
             var top = new Panel { Dock = DockStyle.Fill, BackColor = ColorCanvas, Padding = new Padding(0, 0, 0, 4) };
             _lblReceipts = SectionLabel("Receipts");
             var receiptsHost = CardHost();
             _gridReceipts = CreateGrid();
+            // File first so the loaded PDF name is immediately visible
+            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "File",
+                HeaderText = "File",
+                Width = 260,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            });
             _gridReceipts.Columns.Add(Col("InvoiceNo", "Invoice No", 140));
             _gridReceipts.Columns.Add(Col("Date", "Date", 120));
             _gridReceipts.Columns.Add(Col("Reference", "Reference", 100));
@@ -200,16 +209,9 @@ namespace MetaReceiptsLite
             _gridReceipts.Columns.Add(Col("Rows", "Rows", 50));
             _gridReceipts.Columns.Add(Col("RowsTotal", "Rows total", 90));
             _gridReceipts.Columns.Add(Col("Check", "Check", 120));
-            _gridReceipts.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "File",
-                HeaderText = "File",
-                Width = 220,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
-            });
             receiptsHost.Controls.Add(_gridReceipts);
-            top.Controls.Add(receiptsHost);
             top.Controls.Add(_lblReceipts);
+            top.Controls.Add(receiptsHost);
 
             // Line items section
             var bottom = new Panel { Dock = DockStyle.Fill, BackColor = ColorCanvas, Padding = new Padding(0, 4, 0, 0) };
@@ -259,13 +261,13 @@ namespace MetaReceiptsLite
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
             });
             itemsHost.Controls.Add(_gridItems);
-            bottom.Controls.Add(itemsHost);
             bottom.Controls.Add(filterBar);
+            bottom.Controls.Add(itemsHost);
 
             _split.Panel1.Controls.Add(top);
             _split.Panel2.Controls.Add(bottom);
 
-            // Empty drop zone (shown when no data)
+            // Empty drop zone overlays the split (split stays visible underneath for layout)
             _dropZone = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -297,9 +299,12 @@ namespace MetaReceiptsLite
             _dropZone.Controls.Add(_dropBrowse);
             _dropZone.Resize += (s, e) => LayoutDropZone();
 
-            _content.Controls.Add(_dropZone);
+            // Split first (back), drop zone last (front) while empty
             _content.Controls.Add(_split);
+            _content.Controls.Add(_dropZone);
             LayoutDropZone();
+            Resize += (s, e) => ApplySplitterDistance();
+            Shown += (s, e) => ApplySplitterDistance();
         }
 
         private void BuildStatus()
@@ -325,12 +330,32 @@ namespace MetaReceiptsLite
             {
                 Text = text,
                 Dock = DockStyle.Top,
+                AutoSize = false,
                 Height = 24,
                 Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Bold),
                 ForeColor = ColorNavy,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(2, 0, 0, 0)
             };
+        }
+
+        private void ApplySplitterDistance()
+        {
+            if (_split == null || !_split.IsHandleCreated) return;
+            int h = _split.ClientSize.Height;
+            int min = _split.Panel1MinSize + _split.Panel2MinSize + _split.SplitterWidth;
+            if (h <= min) return;
+            // ~32% for receipts so the File row stays on screen above line items
+            int desired = Math.Max(_split.Panel1MinSize, Math.Min(h * 32 / 100, h - _split.Panel2MinSize));
+            try
+            {
+                if (Math.Abs(_split.SplitterDistance - desired) > 8)
+                    _split.SplitterDistance = desired;
+            }
+            catch (InvalidOperationException)
+            {
+                // SplitContainer rejects distances before it has a stable size
+            }
         }
 
         private static Panel CardHost()
@@ -627,9 +652,9 @@ namespace MetaReceiptsLite
             finally
             {
                 SetBusy(false);
+                UpdateEmptyState();
                 RefreshAllGrids();
                 UpdateStatus();
-                UpdateEmptyState();
                 if (errors.Count > 0)
                 {
                     var sb = new StringBuilder();
@@ -673,20 +698,26 @@ namespace MetaReceiptsLite
             {
                 _gridItems.ResumeLayout();
                 _gridReceipts.ResumeLayout();
-                ResumeLayout();
+                ResumeLayout(true);
             }
-            UpdateEmptyState();
         }
 
         private void UpdateEmptyState()
         {
             bool empty = _receipts.Count == 0;
             _dropZone.Visible = empty;
-            _split.Visible = !empty;
+            // Split stays Visible so its panels keep a real size; drop zone only covers it.
             if (empty)
             {
                 _dropZone.BringToFront();
                 LayoutDropZone();
+            }
+            else
+            {
+                _split.BringToFront();
+                ApplySplitterDistance();
+                _split.Panel1.PerformLayout();
+                _split.Panel2.PerformLayout();
             }
         }
 
@@ -697,7 +728,8 @@ namespace MetaReceiptsLite
             for (int i = 0; i < n; i++)
             {
                 var r = _receipts[i];
-                _gridReceipts.Rows.Add(
+                int idx = _gridReceipts.Rows.Add(
+                    r.SourceFile,
                     r.InvoiceNo,
                     r.InvoiceDate.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
                     r.ReferenceNumber,
@@ -705,9 +737,14 @@ namespace MetaReceiptsLite
                     CurrencyDetector.FormatMoney(r.AmountBilled, r.CurrencySymbol),
                     r.ItemCount.ToString(CultureInfo.InvariantCulture),
                     CurrencyDetector.FormatMoney(r.ItemsTotal, r.CurrencySymbol),
-                    r.Check,
-                    r.SourceFile);
-                _gridReceipts.Rows[i].Tag = r;
+                    r.Check);
+                _gridReceipts.Rows[idx].Tag = r;
+            }
+            if (n > 0)
+            {
+                _gridReceipts.ClearSelection();
+                _gridReceipts.Rows[0].Selected = true;
+                _gridReceipts.FirstDisplayedScrollingRowIndex = 0;
             }
         }
 
