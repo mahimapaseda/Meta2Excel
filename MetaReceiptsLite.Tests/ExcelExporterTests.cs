@@ -36,8 +36,8 @@ namespace MetaReceiptsLite.Tests
                     Assert.NotNull(wb.Worksheet("Receipts"));
                     Assert.NotNull(wb.Worksheet("Line Items"));
                     Assert.NotNull(wb.Worksheet("Branch Summary"));
-                    Assert.NotNull(wb.Worksheet("Campaign Summary"));
                     Assert.NotNull(wb.Worksheet("Daily Spend"));
+                    Assert.DoesNotContain(wb.Worksheets, ws => ws.Name == "Campaign Summary");
 
                     var receiptsWs = wb.Worksheet("Receipts");
                     Assert.Equal("Transaction ID", receiptsWs.Cell(1, 4).GetString());
