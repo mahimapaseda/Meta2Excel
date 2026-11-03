@@ -228,15 +228,15 @@ namespace MetaReceiptsLite
             _lblItems.TextAlign = ContentAlignment.MiddleLeft;
             _lblFilter = new Label
             {
-                Text = "Campaign filter",
+                Text = "Branch / campaign filter",
                 AutoSize = true,
                 ForeColor = ColorMuted,
                 Location = new Point(120, 8)
             };
             _filterCampaign = new TextBox
             {
-                Width = 260,
-                Location = new Point(230, 5),
+                Width = 240,
+                Location = new Point(280, 5),
                 BorderStyle = BorderStyle.FixedSingle
             };
             filterBar.Controls.Add(_lblItems);
@@ -245,19 +245,20 @@ namespace MetaReceiptsLite
 
             var itemsHost = CardHost();
             _gridItems = CreateGrid();
-            _gridItems.Columns.Add(Col("InvoiceNo", "Invoice No", 130));
-            _gridItems.Columns.Add(Col("Campaign", "Campaign", 110));
-            _gridItems.Columns.Add(Col("PeriodFrom", "Period from", 120));
-            _gridItems.Columns.Add(Col("PeriodTo", "Period to", 120));
-            _gridItems.Columns.Add(Col("AdSet", "Ad set", 160));
-            _gridItems.Columns.Add(Col("Currency", "Currency", 70));
-            _gridItems.Columns.Add(Col("Impressions", "Impressions", 90));
-            _gridItems.Columns.Add(Col("Cost", "Cost", 80));
+            _gridItems.Columns.Add(Col("InvoiceNo", "Invoice No", 120));
+            _gridItems.Columns.Add(Col("Branch", "Branch", 110));
+            _gridItems.Columns.Add(Col("Campaign", "Campaign", 100));
+            _gridItems.Columns.Add(Col("PeriodFrom", "Period from", 110));
+            _gridItems.Columns.Add(Col("PeriodTo", "Period to", 110));
+            _gridItems.Columns.Add(Col("AdSet", "Ad set", 140));
+            _gridItems.Columns.Add(Col("Currency", "Currency", 60));
+            _gridItems.Columns.Add(Col("Impressions", "Impressions", 80));
+            _gridItems.Columns.Add(Col("Cost", "Cost", 70));
             _gridItems.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "CPM",
                 HeaderText = "CPM",
-                Width = 80,
+                Width = 70,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
             });
             itemsHost.Controls.Add(_gridItems);
@@ -756,9 +757,13 @@ namespace MetaReceiptsLite
             if (filter.Length > 0)
             {
                 query = _items.Where(it =>
-                    (it.CampaignCode != null && it.CampaignCode.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (it.CampaignName != null && it.CampaignName.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (it.AdSet != null && it.AdSet.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0));
+                {
+                    string branch = BranchResolver.ResolveName(it);
+                    return (branch != null && branch.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                           (it.CampaignCode != null && it.CampaignCode.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                           (it.CampaignName != null && it.CampaignName.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                           (it.AdSet != null && it.AdSet.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
+                });
             }
 
             int count = 0;
@@ -767,6 +772,7 @@ namespace MetaReceiptsLite
                 if (count >= PreviewRowCap) break;
                 _gridItems.Rows.Add(
                     it.InvoiceNo,
+                    BranchResolver.ResolveName(it),
                     it.CampaignDisplay,
                     it.PeriodFrom == default(DateTime) ? "" : it.PeriodFrom.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
                     it.PeriodTo == default(DateTime) ? "" : it.PeriodTo.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),

@@ -13,7 +13,7 @@ namespace MetaReceiptsLite
         {
             using (var sw = NewWriter(path))
             {
-                WriteLine(sw, "Invoice No", "Receipt Date", "Campaign", "Campaign Name", "Period From", "Period To",
+                WriteLine(sw, "Invoice No", "Receipt Date", "Branch", "Campaign", "Campaign Name", "Period From", "Period To",
                     "Ad Set", "Currency", "Impressions", "Cost", "CPM");
                 if (items == null) return;
                 for (int i = 0; i < items.Count; i++)
@@ -22,6 +22,7 @@ namespace MetaReceiptsLite
                     WriteLine(sw,
                         it.InvoiceNo,
                         FormatDate(it.InvoiceDate),
+                        BranchResolver.ResolveName(it),
                         it.CampaignCode,
                         it.CampaignName,
                         FormatDate(it.PeriodFrom),

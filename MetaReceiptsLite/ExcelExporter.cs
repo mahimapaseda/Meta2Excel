@@ -20,6 +20,7 @@ namespace MetaReceiptsLite
             {
                 WriteReceiptsSheet(wb, receipts);
                 WriteLineItemsSheet(wb, items);
+                WriteBranchSummarySheet(wb, items);
                 WriteCampaignSummarySheet(wb, items);
                 WriteDailySpendSheet(wb, receipts);
 
@@ -96,15 +97,16 @@ namespace MetaReceiptsLite
         private static void WriteLineItemsSheet(XLWorkbook wb, IList<LineItem> items)
         {
             var ws = wb.Worksheets.Add("Line Items");
+            // Branch is taken from Ad Set prefix (Kur/Kuru → Kurunegala), not campaign code
             string[] headers =
             {
-                "Invoice No", "Receipt Date", "Campaign", "Campaign Name",
+                "Invoice No", "Receipt Date", "Branch", "Campaign", "Campaign Name",
                 "Period From", "Period To", "Ad Set", "Currency",
                 "Impressions", "Cost", "CPM"
             };
             WriteHeader(ws, headers);
 
-            double[] widths = { 22, 18, 12, 28, 18, 18, 28, 10, 12, 12, 12 };
+            double[] widths = { 22, 18, 16, 12, 28, 18, 18, 28, 10, 12, 12, 12 };
             for (int c = 0; c < widths.Length; c++)
                 ws.Column(c + 1).Width = widths[c];
 
@@ -114,19 +116,20 @@ namespace MetaReceiptsLite
                 int row = i + 2;
                 ws.Cell(row, 1).Value = it.InvoiceNo;
                 SetDateCell(ws.Cell(row, 2), it.InvoiceDate);
-                ws.Cell(row, 3).Value = it.CampaignCode;
-                ws.Cell(row, 4).Value = it.CampaignName;
-                SetDateCell(ws.Cell(row, 5), it.PeriodFrom);
-                SetDateCell(ws.Cell(row, 6), it.PeriodTo);
-                ws.Cell(row, 7).Value = it.AdSet;
-                ws.Cell(row, 8).Value = it.CurrencyCode;
-                ws.Cell(row, 9).Value = it.Impressions;
-                ws.Cell(row, 10).Value = it.Cost;
+                ws.Cell(row, 3).Value = BranchResolver.ResolveName(it);
+                ws.Cell(row, 4).Value = it.CampaignCode;
+                ws.Cell(row, 5).Value = it.CampaignName;
+                SetDateCell(ws.Cell(row, 6), it.PeriodFrom);
+                SetDateCell(ws.Cell(row, 7), it.PeriodTo);
+                ws.Cell(row, 8).Value = it.AdSet;
+                ws.Cell(row, 9).Value = it.CurrencyCode;
+                ws.Cell(row, 10).Value = it.Impressions;
+                ws.Cell(row, 11).Value = it.Cost;
                 var sym = CurrencyDetector.SymbolForCode(it.CurrencyCode);
-                ws.Cell(row, 10).Style.NumberFormat.Format = CurrencyDetector.ExcelMoneyFormat(sym);
-                // CPM = IF(I2=0,0,J2/I2*1000)
-                ws.Cell(row, 11).FormulaA1 = "=IF(I" + row + "=0,0,J" + row + "/I" + row + "*1000)";
-                ws.Cell(row, 11).Style.NumberFormat.Format = "0.00";
+                ws.Cell(row, 11).Style.NumberFormat.Format = CurrencyDetector.ExcelMoneyFormat(sym);
+                // CPM = IF(J2=0,0,K2/J2*1000) — Imp=J, Cost=K after Branch column insert
+                ws.Cell(row, 12).FormulaA1 = "=IF(J" + row + "=0,0,K" + row + "/J" + row + "*1000)";
+                ws.Cell(row, 12).Style.NumberFormat.Format = "0.00";
             }
 
             int lastData = items.Count + 1;
@@ -140,65 +143,69 @@ namespace MetaReceiptsLite
                 foreach (var cur in currencies)
                 {
                     var sym = CurrencyDetector.SymbolForCode(cur);
-                    ws.Cell(totalRow, 7).Value = "TOTAL";
-                    ws.Cell(totalRow, 7).Style.Font.Bold = true;
-                    ws.Cell(totalRow, 8).Value = cur;
+                    ws.Cell(totalRow, 8).Value = "TOTAL";
                     ws.Cell(totalRow, 8).Style.Font.Bold = true;
-                    ws.Cell(totalRow, 9).FormulaA1 =
-                        "SUMIF(H2:H" + lastData + ",H" + totalRow + ",I2:I" + lastData + ")";
+                    ws.Cell(totalRow, 9).Value = cur;
                     ws.Cell(totalRow, 9).Style.Font.Bold = true;
                     ws.Cell(totalRow, 10).FormulaA1 =
-                        "SUMIF(H2:H" + lastData + ",H" + totalRow + ",J2:J" + lastData + ")";
-                    ws.Cell(totalRow, 10).Style.NumberFormat.Format = CurrencyDetector.ExcelMoneyFormat(sym);
+                        "SUMIF(I2:I" + lastData + ",I" + totalRow + ",J2:J" + lastData + ")";
                     ws.Cell(totalRow, 10).Style.Font.Bold = true;
+                    ws.Cell(totalRow, 11).FormulaA1 =
+                        "SUMIF(I2:I" + lastData + ",I" + totalRow + ",K2:K" + lastData + ")";
+                    ws.Cell(totalRow, 11).Style.NumberFormat.Format = CurrencyDetector.ExcelMoneyFormat(sym);
+                    ws.Cell(totalRow, 11).Style.Font.Bold = true;
                     ws.Range(totalRow, 1, totalRow, headers.Length).Style.Border.TopBorder = XLBorderStyleValues.Thin;
                     totalRow++;
                 }
             }
         }
 
-        private static void WriteCampaignSummarySheet(XLWorkbook wb, IList<LineItem> items)
+        private static void WriteBranchSummarySheet(XLWorkbook wb, IList<LineItem> items)
         {
-            var ws = wb.Worksheets.Add("Campaign Summary");
-            string[] headers = { "Campaign", "Currency", "Impressions", "Cost", "CPM", "Share of Spend (%)" };
+            var ws = wb.Worksheets.Add("Branch Summary");
+            string[] headers = { "Branch", "Currency", "Impressions", "Cost", "CPM", "Share of Spend (%)" };
             WriteHeader(ws, headers);
 
-            double[] widths = { 14, 10, 14, 14, 12, 18 };
+            double[] widths = { 18, 10, 14, 14, 12, 18 };
             for (int c = 0; c < widths.Length; c++)
                 ws.Column(c + 1).Width = widths[c];
 
+            // Group by resolved branch name (Ad Set prefix + aliases)
             var groups = items
-                .GroupBy(x => new { Code = x.CampaignCode ?? "", Cur = x.CurrencyCode ?? "" })
+                .GroupBy(x => new
+                {
+                    Branch = BranchResolver.ResolveName(x),
+                    Cur = x.CurrencyCode ?? ""
+                })
                 .Select(g => new
                 {
-                    Campaign = g.Key.Code,
+                    Branch = g.Key.Branch,
                     Currency = g.Key.Cur,
                     Cost = g.Sum(x => x.Cost)
                 })
                 .OrderByDescending(x => x.Cost)
+                .ThenBy(x => x.Branch)
                 .ToList();
 
-            int liLast = items.Count + 1; // Line Items data last row
             for (int i = 0; i < groups.Count; i++)
             {
                 var g = groups[i];
                 int row = i + 2;
-                ws.Cell(row, 1).Value = g.Campaign;
+                ws.Cell(row, 1).Value = g.Branch;
                 ws.Cell(row, 2).Value = g.Currency;
-                // SUMIFS over Line Items: Campaign col C, Currency col H, Impressions I, Cost J
-                string camp = "A" + row;
+                // Line Items: Branch=C, Currency=I, Imp=J, Cost=K
+                string branch = "A" + row;
                 string cur = "B" + row;
                 ws.Cell(row, 3).FormulaA1 =
-                    "SUMIFS('Line Items'!I:I,'Line Items'!C:C," + camp + ",'Line Items'!H:H," + cur + ")";
+                    "SUMIFS('Line Items'!J:J,'Line Items'!C:C," + branch + ",'Line Items'!I:I," + cur + ")";
                 ws.Cell(row, 4).FormulaA1 =
-                    "SUMIFS('Line Items'!J:J,'Line Items'!C:C," + camp + ",'Line Items'!H:H," + cur + ")";
+                    "SUMIFS('Line Items'!K:K,'Line Items'!C:C," + branch + ",'Line Items'!I:I," + cur + ")";
                 ws.Cell(row, 4).Style.NumberFormat.Format = CurrencyDetector.ExcelMoneyFormat(CurrencyDetector.SymbolForCode(g.Currency));
                 ws.Cell(row, 5).FormulaA1 = "=IF(C" + row + "=0,0,D" + row + "/C" + row + "*1000)";
                 ws.Cell(row, 5).Style.NumberFormat.Format = "0.00";
-                // Share relative to same currency total on Line Items
                 ws.Cell(row, 6).FormulaA1 =
-                    "=IF(SUMIF('Line Items'!H:H,B" + row + ",'Line Items'!J:J)=0,0,D" + row +
-                    "/SUMIF('Line Items'!H:H,B" + row + ",'Line Items'!J:J))";
+                    "=IF(SUMIF('Line Items'!I:I,B" + row + ",'Line Items'!K:K)=0,0,D" + row +
+                    "/SUMIF('Line Items'!I:I,B" + row + ",'Line Items'!K:K))";
                 ws.Cell(row, 6).Style.NumberFormat.Format = "0.00%";
             }
 
@@ -227,9 +234,76 @@ namespace MetaReceiptsLite
                     totalRow++;
                 }
             }
+        }
 
-            // silence unused warning in older analyzers
-            GC.KeepAlive(liLast);
+        private static void WriteCampaignSummarySheet(XLWorkbook wb, IList<LineItem> items)
+        {
+            var ws = wb.Worksheets.Add("Campaign Summary");
+            string[] headers = { "Campaign", "Currency", "Impressions", "Cost", "CPM", "Share of Spend (%)" };
+            WriteHeader(ws, headers);
+
+            double[] widths = { 14, 10, 14, 14, 12, 18 };
+            for (int c = 0; c < widths.Length; c++)
+                ws.Column(c + 1).Width = widths[c];
+
+            var groups = items
+                .GroupBy(x => new { Code = x.CampaignCode ?? "", Cur = x.CurrencyCode ?? "" })
+                .Select(g => new
+                {
+                    Campaign = g.Key.Code,
+                    Currency = g.Key.Cur,
+                    Cost = g.Sum(x => x.Cost)
+                })
+                .OrderByDescending(x => x.Cost)
+                .ToList();
+
+            for (int i = 0; i < groups.Count; i++)
+            {
+                var g = groups[i];
+                int row = i + 2;
+                ws.Cell(row, 1).Value = g.Campaign;
+                ws.Cell(row, 2).Value = g.Currency;
+                // Line Items after Branch insert: Campaign=D, Currency=I, Imp=J, Cost=K
+                string camp = "A" + row;
+                string cur = "B" + row;
+                ws.Cell(row, 3).FormulaA1 =
+                    "SUMIFS('Line Items'!J:J,'Line Items'!D:D," + camp + ",'Line Items'!I:I," + cur + ")";
+                ws.Cell(row, 4).FormulaA1 =
+                    "SUMIFS('Line Items'!K:K,'Line Items'!D:D," + camp + ",'Line Items'!I:I," + cur + ")";
+                ws.Cell(row, 4).Style.NumberFormat.Format = CurrencyDetector.ExcelMoneyFormat(CurrencyDetector.SymbolForCode(g.Currency));
+                ws.Cell(row, 5).FormulaA1 = "=IF(C" + row + "=0,0,D" + row + "/C" + row + "*1000)";
+                ws.Cell(row, 5).Style.NumberFormat.Format = "0.00";
+                ws.Cell(row, 6).FormulaA1 =
+                    "=IF(SUMIF('Line Items'!I:I,B" + row + ",'Line Items'!K:K)=0,0,D" + row +
+                    "/SUMIF('Line Items'!I:I,B" + row + ",'Line Items'!K:K))";
+                ws.Cell(row, 6).Style.NumberFormat.Format = "0.00%";
+            }
+
+            int lastData = groups.Count + 1;
+            if (groups.Count > 0)
+            {
+                ws.Range(1, 1, lastData, headers.Length).SetAutoFilter();
+                ws.SheetView.FreezeRows(1);
+
+                var currencies = groups.Select(x => x.Currency).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(c => c).ToList();
+                int totalRow = lastData + 1;
+                foreach (var cur in currencies)
+                {
+                    ws.Cell(totalRow, 1).Value = "TOTAL";
+                    ws.Cell(totalRow, 1).Style.Font.Bold = true;
+                    ws.Cell(totalRow, 2).Value = cur;
+                    ws.Cell(totalRow, 2).Style.Font.Bold = true;
+                    ws.Cell(totalRow, 3).FormulaA1 =
+                        "SUMIF(B2:B" + lastData + ",B" + totalRow + ",C2:C" + lastData + ")";
+                    ws.Cell(totalRow, 3).Style.Font.Bold = true;
+                    ws.Cell(totalRow, 4).FormulaA1 =
+                        "SUMIF(B2:B" + lastData + ",B" + totalRow + ",D2:D" + lastData + ")";
+                    ws.Cell(totalRow, 4).Style.NumberFormat.Format = CurrencyDetector.ExcelMoneyFormat(CurrencyDetector.SymbolForCode(cur));
+                    ws.Cell(totalRow, 4).Style.Font.Bold = true;
+                    ws.Range(totalRow, 1, totalRow, headers.Length).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+                    totalRow++;
+                }
+            }
         }
 
         private static void WriteDailySpendSheet(XLWorkbook wb, IList<Receipt> receipts)

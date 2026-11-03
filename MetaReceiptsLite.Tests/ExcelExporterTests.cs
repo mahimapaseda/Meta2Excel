@@ -35,6 +35,7 @@ namespace MetaReceiptsLite.Tests
                 {
                     Assert.NotNull(wb.Worksheet("Receipts"));
                     Assert.NotNull(wb.Worksheet("Line Items"));
+                    Assert.NotNull(wb.Worksheet("Branch Summary"));
                     Assert.NotNull(wb.Worksheet("Campaign Summary"));
                     Assert.NotNull(wb.Worksheet("Daily Spend"));
 
@@ -45,9 +46,10 @@ namespace MetaReceiptsLite.Tests
                     Assert.Equal("1234567890123456", receiptsWs.Cell(2, 7).GetString());
 
                     var li = wb.Worksheet("Line Items");
-                    Assert.Equal("CPM", li.Cell(1, 11).GetString());
-                    var formula = li.Cell(2, 11).FormulaA1;
-                    Assert.Contains("IF(I2=0,0,J2/I2*1000)", formula.Replace(" ", ""));
+                    Assert.Equal("Branch", li.Cell(1, 3).GetString());
+                    Assert.Equal("CPM", li.Cell(1, 12).GetString());
+                    var formula = li.Cell(2, 12).FormulaA1;
+                    Assert.Contains("IF(J2=0,0,K2/J2*1000)", formula.Replace(" ", ""));
 
                     var daily = wb.Worksheet("Daily Spend");
                     Assert.Contains("payment date", daily.Cell(1, 1).GetString());
@@ -99,8 +101,9 @@ namespace MetaReceiptsLite.Tests
                 using (var wb = new XLWorkbook(path))
                 {
                     var li = wb.Worksheet("Line Items");
-                    Assert.True(li.Cell(2, 5).IsEmpty() || string.IsNullOrWhiteSpace(li.Cell(2, 5).GetFormattedString()));
+                    // Period From / Period To are columns F/G after Branch insert
                     Assert.True(li.Cell(2, 6).IsEmpty() || string.IsNullOrWhiteSpace(li.Cell(2, 6).GetFormattedString()));
+                    Assert.True(li.Cell(2, 7).IsEmpty() || string.IsNullOrWhiteSpace(li.Cell(2, 7).GetFormattedString()));
                 }
             }
             finally
