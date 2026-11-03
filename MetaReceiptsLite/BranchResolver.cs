@@ -14,31 +14,93 @@ namespace MetaReceiptsLite
             @"^\s*([A-Za-z]+)",
             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        // Any spelling → full branch name
+        // Any spelling → full branch name (short codes + longer variants)
         private static readonly Dictionary<string, string> NameByAlias =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
+                // Kurunegala
                 { "Kur", "Kurunegala" },
                 { "Kuru", "Kurunegala" },
-                { "Anu", "Anuradhapura" },
-                { "Amp", "Ampara" },
-                { "Gal", "Galle" },
-                { "Bad", "Badulla" },
-                { "Kan", "Kandy" },
+                { "Kurun", "Kurunegala" },
+                { "Kurune", "Kurunegala" },
+                { "Kurunegala", "Kurunegala" },
+                // Gampaha
                 { "Gam", "Gampaha" },
+                { "Gamp", "Gampaha" },
+                { "Gampa", "Gampaha" },
+                { "Gampaha", "Gampaha" },
+                // Anuradhapura
+                { "Anu", "Anuradhapura" },
+                { "Anura", "Anuradhapura" },
+                { "Anurad", "Anuradhapura" },
+                { "Anuradhapura", "Anuradhapura" },
+                // Ampara
+                { "Amp", "Ampara" },
+                { "Ampar", "Ampara" },
+                { "Ampara", "Ampara" },
+                // Galle
+                { "Gal", "Galle" },
+                { "Galle", "Galle" },
+                // Badulla
+                { "Bad", "Badulla" },
+                { "Badu", "Badulla" },
+                { "Badulla", "Badulla" },
+                // Kandy
+                { "Kan", "Kandy" },
+                { "Kand", "Kandy" },
+                { "Kandy", "Kandy" },
+                // Ratnapura
                 { "Rat", "Ratnapura" },
+                { "Ratn", "Ratnapura" },
+                { "Ratnapura", "Ratnapura" },
+                // Matara
                 { "Mat", "Matara" },
+                { "Mata", "Matara" },
+                { "Matara", "Matara" },
+                // Negombo
                 { "Neg", "Negombo" },
+                { "Nego", "Negombo" },
+                { "Negombo", "Negombo" },
+                // Nugegoda
                 { "Nug", "Nugegoda" },
+                { "Nuge", "Nugegoda" },
+                { "Nugegoda", "Nugegoda" },
+                // Kegalle
                 { "Keg", "Kegalle" },
+                { "Kega", "Kegalle" },
+                { "Kegalle", "Kegalle" },
+                // Nuwara Eliya
                 { "Nuw", "Nuwara Eliya" },
+                { "Nuwa", "Nuwara Eliya" },
+                { "Nuwara", "Nuwara Eliya" },
+                // Horana
                 { "Hor", "Horana" },
+                { "Hora", "Horana" },
+                { "Horana", "Horana" },
+                // Wennappuwa
                 { "Wen", "Wennappuwa" },
+                { "Wenn", "Wennappuwa" },
+                { "Wennappuwa", "Wennappuwa" },
+                // Kuliyapitiya
                 { "Kul", "Kuliyapitiya" },
+                { "Kuli", "Kuliyapitiya" },
+                { "Kuliyapitiya", "Kuliyapitiya" },
+                // Kiribathgoda
                 { "Kir", "Kiribathgoda" },
+                { "Kiri", "Kiribathgoda" },
+                { "Kiribathgoda", "Kiribathgoda" },
+                // Ambalangoda
                 { "Amb", "Ambalangoda" },
+                { "Ambal", "Ambalangoda" },
+                { "Ambalangoda", "Ambalangoda" },
+                // Malabe
                 { "Mal", "Malabe" },
-                { "Ban", "Bandarawela" }
+                { "Mala", "Malabe" },
+                { "Malabe", "Malabe" },
+                // Bandarawela
+                { "Ban", "Bandarawela" },
+                { "Band", "Bandarawela" },
+                { "Bandarawela", "Bandarawela" }
             };
 
         /// <summary>
