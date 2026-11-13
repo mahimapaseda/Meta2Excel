@@ -24,6 +24,8 @@ namespace MetaReceiptsLite
         private static readonly Color ColorBorder = Color.FromArgb(226, 232, 240); // #E2E8F0
         private static readonly Color ColorMuted = Color.FromArgb(71, 85, 105);    // #475569
         private static readonly Color ColorElevated = Color.FromArgb(241, 245, 249); // #F1F5F9
+        private readonly string _themePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MetaReceiptsLite", "theme.txt");
+        private ThemePalette _theme;
 
         private readonly List<Receipt> _receipts = new List<Receipt>();
         private readonly List<LineItem> _items = new List<LineItem>();
@@ -31,7 +33,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.0.21");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.1.0");
 
         private Panel _header;
         private Label _brandTitle;
@@ -44,6 +46,7 @@ namespace MetaReceiptsLite
         private Button _btnCancel;
         private Button _btnRemove;
         private Button _btnUpdate;
+        private Button _btnTheme;
         private ContextMenuStrip _csvMenu;
 
         private Panel _content;
@@ -69,13 +72,14 @@ namespace MetaReceiptsLite
         public MainForm()
         {
             Text = "Meta Receipts Lite";
+            _theme = LoadTheme();
             Width = 1180;
             Height = 760;
             MinimumSize = new Size(900, 600);
             StartPosition = FormStartPosition.CenterScreen;
             AutoScaleMode = AutoScaleMode.Dpi;
             Font = SystemFonts.MessageBoxFont;
-            BackColor = ColorCanvas;
+            BackColor = _theme.Canvas;
             AllowDrop = true;
             DoubleBuffered = true;
 
@@ -96,6 +100,7 @@ namespace MetaReceiptsLite
             UpdateStatus();
             SetBusy(false);
             UpdateEmptyState();
+            ApplyTheme(this);
         }
 
         private void BuildUi()
@@ -156,6 +161,7 @@ namespace MetaReceiptsLite
             _btnCancel = MakeButton("Ca&ncel", Color.FromArgb(190, 18, 60), Color.White, false);
             _btnRemove = MakeButton("&Remove selected", ColorPanel, ColorMuted, false);
             _btnUpdate = MakeButton("Check for &updates", ColorPanel, ColorMuted, false);
+            _btnTheme = MakeButton("Dark mode", ColorPanel, ColorMuted, false);
 
             _csvMenu = new ContextMenuStrip();
             _csvMenu.Items.Add("Line items...", null, (s, e) => ExportCsv(CsvMode.LineItems));
@@ -170,6 +176,7 @@ namespace MetaReceiptsLite
             _actions.Controls.Add(_btnCancel);
             _actions.Controls.Add(_btnRemove);
             _actions.Controls.Add(_btnUpdate);
+            _actions.Controls.Add(_btnTheme);
 
             _header.Controls.Add(_actions);
             _header.Controls.Add(_brandTitle);
@@ -346,6 +353,92 @@ namespace MetaReceiptsLite
             _status.Items.Add(_statusLabel);
         }
 
+        private ThemePalette LoadTheme()
+        {
+            try { return File.Exists(_themePath) && File.ReadAllText(_themePath).Trim().Equals("dark", StringComparison.OrdinalIgnoreCase) ? ThemePalette.Dark : ThemePalette.Light; }
+            catch { return ThemePalette.Light; }
+        }
+
+        private void ToggleTheme()
+        {
+            _theme = _theme.IsDark ? ThemePalette.Light : ThemePalette.Dark;
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_themePath));
+                File.WriteAllText(_themePath, _theme.IsDark ? "dark" : "light");
+            }
+            catch { /* Theme preference is optional; keep the in-session choice. */ }
+            ApplyTheme(this);
+        }
+
+        private void ApplyTheme(Control root)
+        {
+            root.BackColor = _theme.Canvas;
+            root.ForeColor = _theme.Text;
+            foreach (Control control in root.Controls)
+            {
+                if (control is DataGridView grid)
+                {
+                    grid.BackgroundColor = _theme.Surface;
+                    grid.GridColor = _theme.Border;
+                    grid.ColumnHeadersDefaultCellStyle.BackColor = _theme.Elevated;
+                    grid.ColumnHeadersDefaultCellStyle.ForeColor = _theme.Muted;
+                    grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = _theme.Elevated;
+                    grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = _theme.Text;
+                    grid.DefaultCellStyle.BackColor = _theme.Surface;
+                    grid.DefaultCellStyle.ForeColor = _theme.Text;
+                    grid.DefaultCellStyle.SelectionBackColor = _theme.Selection;
+                    grid.DefaultCellStyle.SelectionForeColor = _theme.Text;
+                    grid.AlternatingRowsDefaultCellStyle.BackColor = _theme.Elevated;
+                    grid.AlternatingRowsDefaultCellStyle.ForeColor = _theme.Text;
+                    grid.AlternatingRowsDefaultCellStyle.SelectionBackColor = _theme.Selection;
+                    grid.AlternatingRowsDefaultCellStyle.SelectionForeColor = _theme.Text;
+                }
+                else if (control is Button button)
+                {
+                    bool primary = button == _btnAdd || button == _dropBrowse || button == _btnExportExcel;
+                    button.BackColor = primary ? _theme.Accent : _theme.Surface;
+                    button.ForeColor = primary && _theme.IsDark ? Color.FromArgb(5, 35, 23) : (primary ? Color.White : _theme.Text);
+                    button.FlatAppearance.BorderColor = _theme.Border;
+                    button.FlatAppearance.MouseOverBackColor = _theme.Elevated;
+                }
+                else if (control is TextBox textBox)
+                {
+                    textBox.BackColor = _theme.Surface;
+                    textBox.ForeColor = _theme.Text;
+                }
+                else if (control == _header)
+                {
+                    ApplyTheme(control);
+                    control.BackColor = _theme.Surface;
+                }
+                else if (control == _dropZone)
+                {
+                    ApplyTheme(control);
+                    control.BackColor = _theme.Surface;
+                }
+                else
+                {
+                    control.BackColor = _theme.Canvas;
+                    control.ForeColor = _theme.Text;
+                    ApplyTheme(control);
+                }
+            }
+
+            _brandTitle.ForeColor = _theme.Text;
+            _brandSub.ForeColor = _theme.Muted;
+            _lblReceipts.ForeColor = _theme.Text;
+            _lblItems.ForeColor = _theme.Text;
+            _lblFilter.ForeColor = _theme.Muted;
+            _dropTitle.ForeColor = _theme.Text;
+            _dropHint.ForeColor = _theme.Muted;
+            _status.BackColor = _theme.Canvas;
+            _statusLabel.ForeColor = _theme.Muted;
+            _btnTheme.Text = _theme.IsDark ? "Light mode" : "Dark mode";
+            _btnTheme.AccessibleName = _theme.IsDark ? "Switch to light mode" : "Switch to dark mode";
+            _dropZone.Invalidate();
+        }
+
         private static Label SectionLabel(string text)
         {
             return new Label
@@ -509,6 +602,7 @@ namespace MetaReceiptsLite
             };
             _btnRemove.Click += (s, e) => RemoveSelectedReceipts();
             _btnUpdate.Click += async (s, e) => await CheckForUpdatesAsync(manual: true);
+            _btnTheme.Click += (s, e) => ToggleTheme();
             _filterCampaign.TextChanged += (s, e) => RefreshItemGrid();
         }
 

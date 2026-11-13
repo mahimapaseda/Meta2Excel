@@ -42,7 +42,7 @@ dotnet build -c Release
 dotnet test -c Release
 
 # One-shot: Release build + portable ZIP + Setup.exe → .\dist\
-.\scripts\Build-Release.ps1 -Version 1.0.21
+.\scripts\Build-Release.ps1 -Version 1.1.0
 ```
 
 Manual alternatives:
