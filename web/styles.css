@@ -57,6 +57,19 @@ a {
   gap: 12px;
 }
 
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: block;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.brand:hover .brand-logo {
+  transform: scale(1.05);
+}
+
 .brand-badge {
   background: linear-gradient(135deg, #10B981, #047857);
   color: #042114;
