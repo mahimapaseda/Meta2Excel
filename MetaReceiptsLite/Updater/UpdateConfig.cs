@@ -10,20 +10,20 @@ namespace MetaReceiptsLite.Updater
         public const string DefaultOwner = "mahimapaseda";
         public const string DefaultRepo = "Meta2Excel";
 
-        // Built-in read-only token for private release asset downloads.
-        // Scope: Contents: Read-only, Repository: Meta2Excel only.
-        // Users can override via MRL_GITHUB_TOKEN env var or the in-app Settings dialog.
-        private const string BuiltInToken =
-            "github_pat_11BJUXX6A05rOFNvwGjVPu_" +
-            "qfZuTXPC91ShWQLTSASKoGnEFZ7nlX4u3U7lxgOoGJsYCVXMWJB9ChKoRp9";
-
-        public string GitHubToken { get; set; } = BuiltInToken;
+        // The default repository is public, so its releases can be queried and downloaded anonymously.
+        // Tokens are only needed when a user points the updater at a private fork.
+        public string GitHubToken { get; set; } = string.Empty;
         public string RepoOwner { get; set; } = DefaultOwner;
         public string RepoName { get; set; } = DefaultRepo;
         public bool CheckOnStartup { get; set; } = true;
         public string CustomApiBaseUrl { get; set; } = "https://api.github.com";
 
         public bool HasToken => !string.IsNullOrWhiteSpace(GitHubToken);
+        public bool IsPublicDefaultRepository =>
+            string.Equals(RepoOwner, DefaultOwner, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(RepoName, DefaultRepo, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals((CustomApiBaseUrl ?? string.Empty).TrimEnd('/'), "https://api.github.com", StringComparison.OrdinalIgnoreCase);
+        public bool ShouldUseGitHubToken => HasToken && !IsPublicDefaultRepository;
 
         public static string GetConfigFilePath()
         {
@@ -95,6 +95,11 @@ namespace MetaReceiptsLite.Updater
                           Environment.GetEnvironmentVariable("GITHUB_REPO");
             if (!string.IsNullOrWhiteSpace(envRepo))
                 config.RepoName = envRepo.Trim();
+
+            // Drop any previously bundled/saved credential for the public upstream.
+            // This also prevents an expired legacy token from breaking anonymous API requests.
+            if (config.IsPublicDefaultRepository)
+                config.GitHubToken = string.Empty;
 
             return config;
         }

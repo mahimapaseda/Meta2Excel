@@ -24,6 +24,7 @@ namespace MetaReceiptsLite.Updater
         public string ContentType { get; set; } = string.Empty;
         public string ApiUrl { get; set; } = string.Empty;
         public string BrowserDownloadUrl { get; set; } = string.Empty;
+        public string Sha256Digest { get; set; } = string.Empty;
 
         public bool IsSetupInstaller =>
             Name.IndexOf("Setup", StringComparison.OrdinalIgnoreCase) >= 0 &&

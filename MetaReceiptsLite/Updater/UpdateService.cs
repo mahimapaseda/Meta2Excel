@@ -51,7 +51,7 @@ namespace MetaReceiptsLite.Updater
                 request.Headers.Add("X-GitHub-Api-Version", GitHubApiVersion);
                 request.Headers.UserAgent.Add(new ProductInfoHeaderValue("MetaReceiptsLite-Updater", currentVersion.ToString()));
 
-                if (config.HasToken)
+                if (config.ShouldUseGitHubToken)
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.GitHubToken);
                 }
@@ -117,9 +117,7 @@ namespace MetaReceiptsLite.Updater
         }
 
         /// <summary>
-        /// Downloads an asset from a private GitHub Release.
-        /// Handles GitHub's HTTP 302 redirect to Amazon S3 by removing the Authorization header
-        /// on the redirected request, preventing S3 400 Bad Request errors.
+        /// Downloads an asset from a public or private GitHub Release and verifies GitHub's digest when available.
         /// </summary>
         public async Task<string> DownloadAssetAsync(
             UpdateConfig config,
@@ -147,104 +145,150 @@ namespace MetaReceiptsLite.Updater
                 try { File.Delete(tempDownloadPath); } catch { }
             }
 
-            // Step 1: Query asset API URL without following redirects automatically
-            string downloadUrl = asset.ApiUrl;
-            bool redirectedToS3 = false;
-
-            using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
-            using (var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(10) })
+            try
             {
-                var initialRequest = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
-                initialRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/octet-stream"));
-                initialRequest.Headers.Add("X-GitHub-Api-Version", GitHubApiVersion);
-                initialRequest.Headers.UserAgent.Add(new ProductInfoHeaderValue("MetaReceiptsLite-Updater", "1.0"));
+                bool downloaded = false;
+                bool useAuthenticatedApi = config.ShouldUseGitHubToken;
 
-                if (config.HasToken)
+                // Public releases work anonymously through browser_download_url. This avoids sending
+                // credentials for the public upstream and follows GitHub's asset redirect normally.
+                if (!useAuthenticatedApi && !string.IsNullOrWhiteSpace(asset.BrowserDownloadUrl))
                 {
-                    initialRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.GitHubToken);
-                }
-
-                using (var initialResponse = await client.SendAsync(initialRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
-                {
-                    if (initialResponse.StatusCode == HttpStatusCode.Redirect ||
-                        initialResponse.StatusCode == HttpStatusCode.Found ||
-                        initialResponse.StatusCode == HttpStatusCode.SeeOther ||
-                        initialResponse.StatusCode == HttpStatusCode.TemporaryRedirect)
+                    using (var client = new HttpClient { Timeout = TimeSpan.FromMinutes(15) })
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, asset.BrowserDownloadUrl))
                     {
-                        var location = initialResponse.Headers.Location;
-                        if (location == null)
-                            throw new InvalidOperationException("GitHub API returned a redirect without a Location header.");
-
-                        downloadUrl = location.IsAbsoluteUri ? location.AbsoluteUri : new Uri(new Uri(asset.ApiUrl), location).AbsoluteUri;
-                        redirectedToS3 = true;
-                    }
-                    else if (!initialResponse.IsSuccessStatusCode)
-                    {
-                        throw new InvalidOperationException($"Failed to initiate asset download: HTTP {(int)initialResponse.StatusCode} {initialResponse.ReasonPhrase}");
-                    }
-                }
-            }
-
-            // Step 2: Stream content from final URL.
-            // If redirected to S3 (objects.githubusercontent.com), do NOT include the Authorization header!
-            using (var finalClient = new HttpClient { Timeout = TimeSpan.FromMinutes(15) })
-            {
-                var downloadRequest = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
-                downloadRequest.Headers.UserAgent.Add(new ProductInfoHeaderValue("MetaReceiptsLite-Updater", "1.0"));
-
-                if (!redirectedToS3 && config.HasToken)
-                {
-                    downloadRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.GitHubToken);
-                }
-
-                using (var response = await finalClient.SendAsync(downloadRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
-                {
-                    response.EnsureSuccessStatusCode();
-
-                    long totalBytes = response.Content.Headers.ContentLength ?? asset.Size;
-                    var stopwatch = Stopwatch.StartNew();
-                    long bytesReceived = 0;
-
-                    using (var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    using (var fileStream = new FileStream(tempDownloadPath, FileMode.Create, FileAccess.Write, FileShare.None, DownloadBufferSize, true))
-                    {
-                        byte[] buffer = new byte[DownloadBufferSize];
-                        int read;
-
-                        while ((read = await contentStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
+                        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("MetaReceiptsLite-Updater", "1.0"));
+                        using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
                         {
-                            await fileStream.WriteAsync(buffer, 0, read, cancellationToken).ConfigureAwait(false);
-                            bytesReceived += read;
+                            response.EnsureSuccessStatusCode();
+                            await SaveResponseContentAsync(response.Content, tempDownloadPath, asset.Size, progress, cancellationToken).ConfigureAwait(false);
+                            downloaded = true;
+                        }
+                    }
+                }
+                else
+                {
+                    // Private assets use the API endpoint. GitHub may return either a redirect to
+                    // object storage or the asset bytes directly; support both response forms.
+                    string downloadUrl = asset.ApiUrl;
 
-                            if (progress != null)
+                    using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
+                    using (var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(10) })
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, downloadUrl))
+                    {
+                        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/octet-stream"));
+                        request.Headers.Add("X-GitHub-Api-Version", GitHubApiVersion);
+                        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("MetaReceiptsLite-Updater", "1.0"));
+                        if (useAuthenticatedApi)
+                            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.GitHubToken);
+
+                        using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                        {
+                            if (response.StatusCode == HttpStatusCode.Redirect ||
+                                response.StatusCode == HttpStatusCode.Found ||
+                                response.StatusCode == HttpStatusCode.SeeOther ||
+                                response.StatusCode == HttpStatusCode.TemporaryRedirect)
                             {
-                                double elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
-                                double speedMBps = elapsedSeconds > 0 ? (bytesReceived / (1024.0 * 1024.0)) / elapsedSeconds : 0.0;
-                                int percent = totalBytes > 0 ? (int)((bytesReceived * 100) / totalBytes) : 0;
+                                var location = response.Headers.Location;
+                                if (location == null)
+                                    throw new InvalidOperationException("GitHub returned an asset redirect without a download location.");
+                                downloadUrl = location.IsAbsoluteUri ? location.AbsoluteUri : new Uri(new Uri(asset.ApiUrl), location).AbsoluteUri;
+                            }
+                            else if (response.IsSuccessStatusCode)
+                            {
+                                if (string.Equals(response.Content.Headers.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
+                                    throw new InvalidOperationException("GitHub returned asset metadata instead of the installer file.");
+                                await SaveResponseContentAsync(response.Content, tempDownloadPath, asset.Size, progress, cancellationToken).ConfigureAwait(false);
+                                downloaded = true;
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException($"GitHub could not start the asset download (HTTP {(int)response.StatusCode} {response.ReasonPhrase}).");
+                            }
+                        }
+                    }
 
-                                progress.Report(new UpdateProgressReport
-                                {
-                                    BytesReceived = bytesReceived,
-                                    TotalBytes = totalBytes,
-                                    Percentage = Math.Min(100, Math.Max(0, percent)),
-                                    MegaBytesReceived = bytesReceived / (1024.0 * 1024.0),
-                                    TotalMegaBytes = totalBytes / (1024.0 * 1024.0),
-                                    SpeedMegaBytesPerSec = speedMBps,
-                                    StatusMessage = $"Downloading: {bytesReceived / (1024 * 1024.0):F1} MB / {totalBytes / (1024 * 1024.0):F1} MB ({speedMBps:F2} MB/s)"
-                                });
+                    if (!downloaded)
+                    {
+                        // Never forward a GitHub token to the signed object-storage URL.
+                        using (var client = new HttpClient { Timeout = TimeSpan.FromMinutes(15) })
+                        using (var request = new HttpRequestMessage(HttpMethod.Get, downloadUrl))
+                        {
+                            request.Headers.UserAgent.Add(new ProductInfoHeaderValue("MetaReceiptsLite-Updater", "1.0"));
+                            using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                            {
+                                response.EnsureSuccessStatusCode();
+                                await SaveResponseContentAsync(response.Content, tempDownloadPath, asset.Size, progress, cancellationToken).ConfigureAwait(false);
                             }
                         }
                     }
                 }
-            }
 
-            if (File.Exists(destinationPath))
+                var downloadedSize = new FileInfo(tempDownloadPath).Length;
+                if (asset.Size > 0 && downloadedSize != asset.Size)
+                    throw new InvalidDataException($"The downloaded file is incomplete ({downloadedSize} of {asset.Size} bytes). Please retry.");
+
+                if (!string.IsNullOrWhiteSpace(asset.Sha256Digest))
+                {
+                    const string digestPrefix = "sha256:";
+                    if (asset.Sha256Digest.StartsWith(digestPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var expectedHash = asset.Sha256Digest.Substring(digestPrefix.Length);
+                        if (!VerifyChecksum(tempDownloadPath, expectedHash))
+                            throw new InvalidDataException("GitHub's SHA-256 digest does not match the downloaded file. The installer was discarded.");
+                    }
+                }
+
+                if (File.Exists(destinationPath)) File.Delete(destinationPath);
+                File.Move(tempDownloadPath, destinationPath);
+                return destinationPath;
+            }
+            catch
             {
-                try { File.Delete(destinationPath); } catch { }
+                try { if (File.Exists(tempDownloadPath)) File.Delete(tempDownloadPath); } catch { }
+                throw;
             }
-            File.Move(tempDownloadPath, destinationPath);
+        }
 
-            return destinationPath;
+        private static async Task SaveResponseContentAsync(
+            HttpContent content,
+            string destinationPath,
+            long expectedBytes,
+            IProgress<UpdateProgressReport> progress,
+            CancellationToken cancellationToken)
+        {
+            long totalBytes = content.Headers.ContentLength ?? expectedBytes;
+            var stopwatch = Stopwatch.StartNew();
+            long bytesReceived = 0;
+
+            using (var contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false))
+            using (var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, DownloadBufferSize, true))
+            {
+                byte[] buffer = new byte[DownloadBufferSize];
+                int read;
+                while ((read = await contentStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer, 0, read, cancellationToken).ConfigureAwait(false);
+                    bytesReceived += read;
+
+                    if (progress != null)
+                    {
+                        double elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+                        double speedMBps = elapsedSeconds > 0 ? (bytesReceived / (1024.0 * 1024.0)) / elapsedSeconds : 0.0;
+                        int percentage = totalBytes > 0 ? (int)((bytesReceived * 100) / totalBytes) : 0;
+                        progress.Report(new UpdateProgressReport
+                        {
+                            BytesReceived = bytesReceived,
+                            TotalBytes = totalBytes,
+                            Percentage = Math.Min(100, Math.Max(0, percentage)),
+                            MegaBytesReceived = bytesReceived / (1024.0 * 1024.0),
+                            TotalMegaBytes = totalBytes / (1024.0 * 1024.0),
+                            SpeedMegaBytesPerSec = speedMBps,
+                            StatusMessage = $"Downloading: {bytesReceived / (1024 * 1024.0):F1} MB / {totalBytes / (1024 * 1024.0):F1} MB ({speedMBps:F2} MB/s)"
+                        });
+                    }
+                }
+            }
         }
 
         public bool VerifyChecksum(string filePath, string expectedSha256Hex)
@@ -376,6 +420,8 @@ namespace MetaReceiptsLite.Updater
                             asset.ApiUrl = aUrl.ToString();
                         if (aDict.TryGetValue("browser_download_url", out var bUrl) && bUrl != null)
                             asset.BrowserDownloadUrl = bUrl.ToString();
+                        if (aDict.TryGetValue("digest", out var digest) && digest != null)
+                            asset.Sha256Digest = digest.ToString();
 
                         release.Assets.Add(asset);
                     }

@@ -31,7 +31,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.0.20");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.0.21");
 
         private Panel _header;
         private Label _brandTitle;
@@ -1042,11 +1042,11 @@ namespace MetaReceiptsLite
                 {
                     _statusLabel.Text = "Update check failed.";
                     var msg = result.ErrorMessage;
-                    if (result.HttpStatusCode == 401 || result.HttpStatusCode == 404 || !_updateConfig.HasToken)
+                    if ((result.HttpStatusCode == 401 || result.HttpStatusCode == 404) && !_updateConfig.IsPublicDefaultRepository)
                     {
                         var ask = MessageBox.Show(this,
-                            $"{msg}\n\nWould you like to configure your GitHub Personal Access Token now?",
-                            "GitHub Authentication Required", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                            $"{msg}\n\nWould you like to review the repository and optional token settings?",
+                            "Update Settings", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                         if (ask == DialogResult.Yes)
                         {
                             using (var dlg = new UpdateSettingsDialog(_updateConfig, _updateService))

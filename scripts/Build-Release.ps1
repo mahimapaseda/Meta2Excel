@@ -11,7 +11,7 @@
   signs Setup.exe and MetaReceiptsLite.exe when signtool is available.
 #>
 param(
-    [string]$Version = "1.0.20",
+    [string]$Version = "1.0.21",
     [string]$SignThumbprint = $env:MRL_SIGN_THUMBPRINT
 )
 

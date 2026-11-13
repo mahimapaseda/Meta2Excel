@@ -169,7 +169,7 @@ namespace MetaReceiptsLite.Updater
 
             _btnSettings = new Button
             {
-                Text = "Update Now",
+                Text = "Settings...",
                 Width = 110,
                 Height = 32,
                 FlatStyle = FlatStyle.Flat,
@@ -246,18 +246,6 @@ namespace MetaReceiptsLite.Updater
                 return;
             }
 
-            // Check if private repo requires token
-            if (!_config.HasToken)
-            {
-                var ask = MessageBox.Show(this,
-                    "No GitHub Personal Access Token is configured. If your repository is private, downloads may fail.\n\nWould you like to configure your token now?",
-                    "GitHub Authentication", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (ask == DialogResult.Yes)
-                {
-                    ShowSettingsDialog();
-                }
-            }
-
             var asset = _checkResult.TargetAsset;
             if (asset == null)
             {
@@ -304,12 +292,12 @@ namespace MetaReceiptsLite.Updater
             }
             catch (Exception ex)
             {
-                _lblProgressStatus.Text = $"Error: {ex.Message}";
+                _lblProgressStatus.Text = $"Download failed: {ex.Message}";
                 _lblProgressStatus.ForeColor = Color.FromArgb(160, 40, 40);
                 _btnAction.Enabled = true;
                 _btnSettings.Enabled = true;
                 MessageBox.Show(this,
-                    $"Failed to download update asset:\n{ex.Message}\n\nPlease verify that your token is valid and has 'Contents: Read' permissions.",
+                    $"Failed to download update asset:\n{ex.Message}\n\nPublic releases do not need a token. If this is a private repository, open Settings and enter a fine-grained token with Contents: Read-only access.",
                     "Download Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

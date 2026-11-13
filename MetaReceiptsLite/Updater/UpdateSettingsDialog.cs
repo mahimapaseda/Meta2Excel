@@ -32,7 +32,7 @@ namespace MetaReceiptsLite.Updater
             _config = config ?? UpdateConfig.Load();
             _updateService = updateService ?? new UpdateService();
 
-            Text = "GitHub Repository & Token Configuration";
+            Text = "Update Settings";
             Width = 520;
             Height = 390;
             StartPosition = FormStartPosition.CenterParent;
@@ -59,7 +59,7 @@ namespace MetaReceiptsLite.Updater
 
             var lblTitle = new Label
             {
-                Text = "Private Update Configuration",
+                Text = "GitHub Update Settings",
                 ForeColor = Color.White,
                 Font = new Font(Font.FontFamily, 11f, FontStyle.Bold),
                 AutoSize = true,
@@ -68,7 +68,7 @@ namespace MetaReceiptsLite.Updater
 
             var lblSubtitle = new Label
             {
-                Text = "Configure Fine-Grained GitHub Personal Access Token (PAT) for private releases.",
+                Text = "Public releases work without a token. Add one only for a private repository.",
                 ForeColor = Color.FromArgb(200, 225, 250),
                 Font = new Font(Font.FontFamily, 8.5f, FontStyle.Regular),
                 AutoSize = true,
@@ -125,7 +125,7 @@ namespace MetaReceiptsLite.Updater
 
             var lblTokenHelp = new Label
             {
-                Text = "Requires Read-Only permission on 'Repository Contents'. Leave blank if using public repo.",
+                Text = "Optional. Private repositories need a fine-grained token with Contents: Read-only.",
                 ForeColor = ColorMuted,
                 Font = new Font(Font.FontFamily, 8f, FontStyle.Italic),
                 AutoSize = true,
@@ -267,7 +267,7 @@ namespace MetaReceiptsLite.Updater
 
         private void PopulateFields()
         {
-            _txtToken.Text = _config.GitHubToken ?? string.Empty;
+            _txtToken.Text = _config.IsPublicDefaultRepository ? string.Empty : (_config.GitHubToken ?? string.Empty);
             _txtOwner.Text = string.IsNullOrWhiteSpace(_config.RepoOwner) ? UpdateConfig.DefaultOwner : _config.RepoOwner;
             _txtRepo.Text = string.IsNullOrWhiteSpace(_config.RepoName) ? UpdateConfig.DefaultRepo : _config.RepoName;
             _chkStartup.Checked = _config.CheckOnStartup;
