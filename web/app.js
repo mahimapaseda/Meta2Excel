@@ -274,10 +274,23 @@
     const activeItems = state.items.filter(i => !state.dedupeActive || !i.isDuplicate);
     const duplicateCount = state.receipts.filter(r => r.isDuplicate).length;
 
-    // Total spend by primary currency (summing USD for summary display)
-    const totalSpend = activeReceipts.reduce((sum, r) => sum + r.amount, 0);
+    // Total spend grouped by currency (matching desktop engine)
+    const byCur = {};
+    activeReceipts.forEach(r => {
+      const cur = r.currency || 'USD';
+      byCur[cur] = (byCur[cur] || 0) + r.amount;
+    });
 
-    statSpend.textContent = formatMoney(totalSpend, 'USD');
+    const curKeys = Object.keys(byCur);
+    if (curKeys.length === 0) {
+      statSpend.textContent = "$0.00";
+    } else if (curKeys.length === 1) {
+      statSpend.textContent = formatMoney(byCur[curKeys[0]], curKeys[0]);
+      statSpend.style.fontSize = '';
+    } else {
+      statSpend.textContent = curKeys.map(c => formatMoney(byCur[c], c)).join(' · ');
+      statSpend.style.fontSize = curKeys.length > 2 ? '13px' : '15px';
+    }
     statInvoices.textContent = activeReceipts.length.toLocaleString();
     statItems.textContent = activeItems.length.toLocaleString();
     statDuplicates.textContent = duplicateCount.toString();

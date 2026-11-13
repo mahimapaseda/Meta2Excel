@@ -74,7 +74,8 @@ namespace MetaReceiptsLite
 
                 int n = points.Count;
                 float slot = plotW / (float)Math.Max(n, 1);
-                float barW = Math.Max(4f, slot * 0.55f);
+                float barW = Math.Max(1f, Math.Min(slot * 0.55f, 24f));
+                int labelStride = Math.Max(1, (int)Math.Ceiling(n * 52f / plotW));
 
                 var linePts = new PointF[n];
                 for (int i = 0; i < n; i++)
@@ -88,9 +89,13 @@ namespace MetaReceiptsLite
                     float ly = bottom - (float)((double)(p.Cumulative / maxY) * plotH);
                     linePts[i] = new PointF(cx, ly);
 
-                    string dx = p.Date.ToString("dd MMM", CultureInfo.GetCultureInfo("en-US"));
-                    var sz = g.MeasureString(dx, labelFont);
-                    g.DrawString(dx, labelFont, textBrush, cx - sz.Width / 2f, bottom + 4);
+                    if (i % labelStride == 0 || i == n - 1)
+                    {
+                        string dx = p.Date.ToString("dd MMM", CultureInfo.GetCultureInfo("en-US"));
+                        var sz = g.MeasureString(dx, labelFont);
+                        g.DrawString(dx, labelFont, textBrush, cx - sz.Width / 2f, bottom + 4);
+                        g.DrawLine(axisPen, cx, bottom, cx, bottom + 3);
+                    }
                 }
 
                 if (n == 1)

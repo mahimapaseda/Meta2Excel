@@ -18,14 +18,14 @@ namespace MetaReceiptsLite
         private static readonly Regex RxDateTime = new Regex(@"^(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}),\s*(\d{2}:\d{2})$", RegexOptions.CultureInvariant);
         private static readonly Regex RxReference = new Regex(@"Reference number:\s*([A-Z0-9]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         private static readonly Regex RxTransactionId = new Regex(@"(\d{10,}-\d{10,})", RegexOptions.CultureInvariant);
-        private static readonly Regex RxInvoiceNo = new Regex(@"Invoice no\.\s*(FBADS-\d+-\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        private static readonly Regex RxInvoiceNo = new Regex(@"Invoice no\.\s*([A-Za-z0-9\-]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         private static readonly Regex RxPaymentCard = new Regex(@"^((?:Mastercard|Visa|Amex|American Express|PayPal|[A-Za-z]+))\s+[·•\.]{2,}\s*(\d{4})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         private static readonly Regex RxCampaignTitle = new Regex(@"^\(([^)]+)\)\s+(.+)$", RegexOptions.CultureInvariant);
         private static readonly Regex RxPeriod = new Regex(
             @"^From\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4},\s*\d{2}:\d{2})\s+to\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4},\s*\d{2}:\d{2})$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         private static readonly Regex RxAdSet = new Regex(
-            @"^(.+?)\s+([\d.,]+)\s+Impressions\s+(.+)$",
+            @"^(.+)\s+([\d.,]+)\s+Impressions\s+(.+)$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         private static readonly Regex RxLoneAmountOnly = new Regex(
             @"^(?:[€£¥₹$]|Rs\.?|USD|EUR|GBP|LKR|INR)?\s*[\d.,]+\s*(?:USD|EUR|GBP|LKR|INR)?$",

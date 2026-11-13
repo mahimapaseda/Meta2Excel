@@ -186,25 +186,26 @@ namespace MetaReceiptsLite
                 .ThenBy(x => x.Branch)
                 .ToList();
 
+            int itemsLast = items.Count + 1;
             for (int i = 0; i < groups.Count; i++)
             {
                 var g = groups[i];
                 int row = i + 2;
                 ws.Cell(row, 1).Value = g.Branch;
                 ws.Cell(row, 2).Value = g.Currency;
-                // Line Items: Branch=C, Currency=I, Imp=J, Cost=K
+                // Line Items: Branch=C, Currency=I, Imp=J, Cost=K (bounded to data rows so TOTAL row is excluded)
                 string branch = "A" + row;
                 string cur = "B" + row;
                 ws.Cell(row, 3).FormulaA1 =
-                    "SUMIFS('Line Items'!J:J,'Line Items'!C:C," + branch + ",'Line Items'!I:I," + cur + ")";
+                    "SUMIFS('Line Items'!J$2:J$" + itemsLast + ",'Line Items'!C$2:C$" + itemsLast + "," + branch + ",'Line Items'!I$2:I$" + itemsLast + "," + cur + ")";
                 ws.Cell(row, 4).FormulaA1 =
-                    "SUMIFS('Line Items'!K:K,'Line Items'!C:C," + branch + ",'Line Items'!I:I," + cur + ")";
+                    "SUMIFS('Line Items'!K$2:K$" + itemsLast + ",'Line Items'!C$2:C$" + itemsLast + "," + branch + ",'Line Items'!I$2:I$" + itemsLast + "," + cur + ")";
                 ws.Cell(row, 4).Style.NumberFormat.Format = CurrencyDetector.ExcelMoneyFormat(CurrencyDetector.SymbolForCode(g.Currency));
                 ws.Cell(row, 5).FormulaA1 = "=IF(C" + row + "=0,0,D" + row + "/C" + row + "*1000)";
                 ws.Cell(row, 5).Style.NumberFormat.Format = "0.00";
                 ws.Cell(row, 6).FormulaA1 =
-                    "=IF(SUMIF('Line Items'!I:I,B" + row + ",'Line Items'!K:K)=0,0,D" + row +
-                    "/SUMIF('Line Items'!I:I,B" + row + ",'Line Items'!K:K))";
+                    "=IF(SUMIF('Line Items'!I$2:I$" + itemsLast + ",B" + row + ",'Line Items'!K$2:K$" + itemsLast + ")=0,0,D" + row +
+                    "/SUMIF('Line Items'!I$2:I$" + itemsLast + ",B" + row + ",'Line Items'!K$2:K$" + itemsLast + "))";
                 ws.Cell(row, 6).Style.NumberFormat.Format = "0.00%";
             }
 
@@ -303,23 +304,22 @@ namespace MetaReceiptsLite
                 ws.Range(3, 1, lastData, headers.Length).SetAutoFilter();
                 ws.SheetView.FreezeRows(3);
 
-                // Replace count/amount with formulas referencing Receipts where practical
+                // Replace count/amount with formulas referencing Receipts where practical (bounded to data rows so TOTAL rows are excluded)
                 for (int i = 0; i < daily.Count; i++)
                 {
                     var d = daily[i];
                     int row = i + 4;
-                    // Use SUMIFS with currency; date equality via INT of receipt date
-                    // Simpler reliable approach: keep computed values (already set) — also add formulas for Amount using SUMIFS on currency+date text
+                    // Count, Amount, Impressions, and Cumulative bounded to Receipts data rows [2..receiptsLast]
                     string dateLit = d.Date.ToString("yyyy-mm-dd", CultureInfo.InvariantCulture);
                     ws.Cell(row, 3).FormulaA1 =
-                        "COUNTIFS(Receipts!I:I,B" + row + ",Receipts!B:B,\">=\"&A" + row + ",Receipts!B:B,\"<\"&(A" + row + "+1))";
+                        "COUNTIFS(Receipts!I$2:I$" + receiptsLast + ",B" + row + ",Receipts!B$2:B$" + receiptsLast + ",\">=\"&A" + row + ",Receipts!B$2:B$" + receiptsLast + ",\"<\"&(A" + row + "+1))";
                     ws.Cell(row, 4).FormulaA1 =
-                        "SUMIFS(Receipts!J:J,Receipts!I:I,B" + row + ",Receipts!B:B,\">=\"&A" + row + ",Receipts!B:B,\"<\"&(A" + row + "+1))";
+                        "SUMIFS(Receipts!J$2:J$" + receiptsLast + ",Receipts!I$2:I$" + receiptsLast + ",B" + row + ",Receipts!B$2:B$" + receiptsLast + ",\">=\"&A" + row + ",Receipts!B$2:B$" + receiptsLast + ",\"<\"&(A" + row + "+1))";
                     ws.Cell(row, 5).FormulaA1 =
-                        "SUMIFS(Receipts!L:L,Receipts!I:I,B" + row + ",Receipts!B:B,\">=\"&A" + row + ",Receipts!B:B,\"<\"&(A" + row + "+1))";
-                    // Cumulative: sum of Amount Billed for same currency up to this row's date
+                        "SUMIFS(Receipts!L$2:L$" + receiptsLast + ",Receipts!I$2:I$" + receiptsLast + ",B" + row + ",Receipts!B$2:B$" + receiptsLast + ",\">=\"&A" + row + ",Receipts!B$2:B$" + receiptsLast + ",\"<\"&(A" + row + "+1))";
+                    // Cumulative: sum of Amount Billed for same currency up to this row's date (strictly >0 to exclude blank dates)
                     ws.Cell(row, 6).FormulaA1 =
-                        "SUMIFS(Receipts!J:J,Receipts!I:I,B" + row + ",Receipts!B:B,\"<=\"&(A" + row + "+0.9999))";
+                        "SUMIFS(Receipts!J$2:J$" + receiptsLast + ",Receipts!I$2:I$" + receiptsLast + ",B" + row + ",Receipts!B$2:B$" + receiptsLast + ",\">0\",Receipts!B$2:B$" + receiptsLast + ",\"<=\"&(A" + row + "+0.9999))";
                     GC.KeepAlive(dateLit);
                 }
             }

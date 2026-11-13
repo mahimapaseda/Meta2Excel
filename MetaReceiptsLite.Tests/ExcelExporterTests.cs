@@ -53,6 +53,13 @@ namespace MetaReceiptsLite.Tests
 
                     var daily = wb.Worksheet("Daily Spend");
                     Assert.Contains("payment date", daily.Cell(1, 1).GetString());
+                    // Bounded range check (ensures TOTAL rows are not included)
+                    Assert.DoesNotContain("Receipts!J:J", daily.Cell(4, 6).FormulaA1);
+                    Assert.Contains("Receipts!J$2:J$4", daily.Cell(4, 6).FormulaA1);
+
+                    var bs = wb.Worksheet("Branch Summary");
+                    Assert.DoesNotContain("'Line Items'!K:K", bs.Cell(2, 6).FormulaA1);
+                    Assert.Contains("'Line Items'!K$2:K$5", bs.Cell(2, 6).FormulaA1);
 
                     // Pictures embedded for currencies
                     Assert.True(daily.Pictures.Count >= 1);

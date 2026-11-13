@@ -20,31 +20,24 @@ namespace MetaReceiptsLite
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(receipt.TransactionId))
+            if (!string.IsNullOrWhiteSpace(receipt.TransactionId) && _transactionIds.Contains(receipt.TransactionId))
             {
-                if (_transactionIds.Contains(receipt.TransactionId))
-                {
-                    reason = "duplicate (Transaction ID " + receipt.TransactionId + ")";
-                    return false;
-                }
-                _transactionIds.Add(receipt.TransactionId);
-                if (!string.IsNullOrWhiteSpace(receipt.InvoiceNo))
-                    _invoiceNos.Add(receipt.InvoiceNo);
-                return true;
+                reason = "duplicate (Transaction ID " + receipt.TransactionId + ")";
+                return false;
             }
+
+            if (!string.IsNullOrWhiteSpace(receipt.InvoiceNo) && _invoiceNos.Contains(receipt.InvoiceNo))
+            {
+                reason = "duplicate (Invoice No " + receipt.InvoiceNo + ")";
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(receipt.TransactionId))
+                _transactionIds.Add(receipt.TransactionId);
 
             if (!string.IsNullOrWhiteSpace(receipt.InvoiceNo))
-            {
-                if (_invoiceNos.Contains(receipt.InvoiceNo))
-                {
-                    reason = "duplicate (Invoice No " + receipt.InvoiceNo + ")";
-                    return false;
-                }
                 _invoiceNos.Add(receipt.InvoiceNo);
-                return true;
-            }
 
-            // No key — allow but note (caller may still want to import once)
             return true;
         }
 

@@ -26,6 +26,16 @@ namespace MetaReceiptsLite.Tests
         }
 
         [Fact]
+        public void DuplicateInvoiceNo_WithDifferentTransactionId_IsRejected()
+        {
+            var d = new ReceiptDeduper();
+            string reason;
+            Assert.True(d.TryRegister(new Receipt { TransactionId = "TXN-1", InvoiceNo = "INV-100" }, out reason));
+            Assert.False(d.TryRegister(new Receipt { TransactionId = "TXN-2", InvoiceNo = "INV-100" }, out reason));
+            Assert.Contains("Invoice No", reason);
+        }
+
+        [Fact]
         public void Unregister_AllowsReimport()
         {
             var d = new ReceiptDeduper();

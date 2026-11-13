@@ -177,6 +177,36 @@ namespace MetaReceiptsLite.Tests
         }
 
         [Fact]
+        public void ParseLines_NumericOrCustomInvoiceNo_IsExtracted()
+        {
+            var lines = BaseHeader("$12.50", "99000000000000001-99000000000000002");
+            lines.Add("(C) campaign alpha");
+            lines.Add("From 15 Oct 2026, 00:00 to 16 Oct 2026, 12:22");
+            lines.Add("ad set 100 Impressions $12.50");
+            lines.Add("Invoice no. 1092837482");
+
+            var r = ReceiptParser.ParseLines(lines);
+            Assert.Equal("1092837482", r.InvoiceNo);
+            Assert.Equal(12.50m, r.AmountBilled);
+        }
+
+        [Fact]
+        public void ParseLines_AdSetNameWithWordImpressions_IsParsedCorrectly()
+        {
+            var lines = BaseHeader("$25.00", "99000000000000003-99000000000000004");
+            lines.Add("(C) campaign branding");
+            lines.Add("From 15 Oct 2026, 00:00 to 16 Oct 2026, 12:22");
+            lines.Add("Feed Top Impressions Broad 2,500 Impressions $25.00");
+            lines.Add("Invoice no. FB-ADS-998811");
+
+            var r = ReceiptParser.ParseLines(lines);
+            Assert.Equal("Feed Top Impressions Broad", r.Items[0].AdSet);
+            Assert.Equal(2500, r.Items[0].Impressions);
+            Assert.Equal(25.00m, r.Items[0].Cost);
+            Assert.Equal("FB-ADS-998811", r.InvoiceNo);
+        }
+
+        [Fact]
         public void Currencies_AreNotCrossSummed_InModels()
         {
             var eur = ReceiptParser.ParseLines(BuildSingle("€10,00", "90000000000000001-90000000000000002", "€10,00", "EUR"));
