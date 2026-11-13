@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meta Receipts Lite — High-Precision Meta Ads PDF to Excel Converter</title>
+  <meta name="description" content="Local, zero-leakage desktop utility and in-browser workbench that extracts Meta Ads receipt PDFs into clean Excel (.xlsx) and CSV files.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/design-tokens.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <!-- Top Global Telemetry Bar -->
+  <header class="topbar">
+    <div class="topbar-container">
+      <div class="brand">
+        <div class="brand-badge">MRL</div>
+        <div class="brand-text">
+          <span class="brand-title">Meta Receipts Lite</span>
+          <span class="brand-sub">ENGINE v1.0.12 &bull; ZERO-LEAKAGE LOCAL CORE</span>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="security-indicator">
+          <span class="pulse-dot"></span>
+          <span>AIR-GAPPED CLIENT-SIDE OPERATION</span>
+        </div>
+        <button id="themeToggle" class="btn-icon" title="Toggle Theme" aria-label="Toggle Theme">
+          <svg class="sun-icon" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/></svg>
+        </button>
+        <a href="#downloads" class="btn btn-secondary btn-sm">Get Desktop App</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Header -->
+    <section class="hero-section">
+      <div class="hero-container">
+        <div class="hero-pill">ENGINEERED FOR MEDIA BUYERS & FINANCIAL CONTROLLERS</div>
+        <h1 class="hero-headline">Parse thousands of Meta Ads receipts into Excel. In seconds.</h1>
+        <p class="hero-lead">
+          Stop copying transaction tables from messy Facebook invoice PDFs. Meta Receipts Lite extracts ad accounts, campaign breakdowns, VAT IDs, payment methods, and daily spend directly into unified <code>.xlsx</code> or clean <code>.csv</code> sheets.
+        </p>
+
+        <div class="hero-features-bar">
+          <div class="feat-item">
+            <span class="feat-check">✓</span>
+            <strong>Zero Data Leakage:</strong> Processing executes strictly inside your CPU RAM.
+          </div>
+          <div class="feat-item">
+            <span class="feat-check">✓</span>
+            <strong>Deduplication Engine:</strong> Automatically ignores duplicate invoice downloads.
+          </div>
+          <div class="feat-item">
+            <span class="feat-check">✓</span>
+            <strong>Multi-Currency:</strong> Auto-groups spend by USD, EUR, GBP, and regional currencies.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE WORKBENCH / CONVERTER -->
+    <section class="workbench-section" id="workbench">
+      <div class="workbench-card">
+        <!-- Top Toolbar -->
+        <div class="workbench-header">
+          <div class="wb-title-group">
+            <span class="terminal-tag">LIVE PARSER WORKBENCH</span>
+            <h2>Active Batch Processor</h2>
+          </div>
+          <div class="wb-controls">
+            <button id="btnLoadDemo" class="btn btn-secondary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              Load Demo Batch (20 Invoices)
+            </button>
+            <button id="btnClear" class="btn btn-outline btn-sm">Clear Queue</button>
+          </div>
+        </div>
+
+        <!-- Upper Grid: Dropzone & Live Telemetry -->
+        <div class="workbench-grid">
+          <div class="dropzone-box" id="dropzone">
+            <input type="file" id="fileInput" multiple accept=".pdf,.json,.txt" class="visually-hidden">
+            <div class="dropzone-icon">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            </div>
+            <div class="dropzone-instructions">
+              <strong>Drag & Drop Meta receipt PDFs here</strong>
+              <span>or <button type="button" class="link-btn" onclick="document.getElementById('fileInput').click()">browse files</button> from your drive</span>
+            </div>
+            <div class="dropzone-meta">
+              <span>Supports batch selection of 500+ files</span>
+              <span class="separator">&bull;</span>
+              <span>Local memory buffer</span>
+            </div>
+          </div>
+
+          <!-- Telemetry Panel -->
+          <div class="telemetry-panel">
+            <div class="panel-header">
+              <span class="panel-label">BATCH TELEMETRY</span>
+              <span class="status-badge" id="batchStatus">READY</span>
+            </div>
+            <div class="telemetry-stats">
+              <div class="stat-card">
+                <span class="stat-label">TOTAL EXTRACTED SPEND</span>
+                <span class="stat-value highlight" id="statSpend">$0.00</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">VALID INVOICES</span>
+                <span class="stat-value" id="statInvoices">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">LINE ITEMS / CAMPAIGNS</span>
+                <span class="stat-value" id="statItems">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">DUPLICATES BLOCKED</span>
+                <span class="stat-value warning" id="statDuplicates">0</span>
+              </div>
+            </div>
+
+            <!-- Spend Velocity Chart -->
+            <div class="chart-container">
+              <div class="chart-label">DAILY SPEND VELOCITY (EXTRACTED RUN)</div>
+              <canvas id="spendChart" width="480" height="90"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Deduplication Bar -->
+        <div class="filter-bar">
+          <div class="filter-input-wrapper">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="campaignFilter" placeholder="Filter by campaign name or account..." autocomplete="off">
+          </div>
+          <div class="toggles-wrapper">
+            <label class="toggle-control">
+              <input type="checkbox" id="toggleDedupe" checked>
+              <span class="toggle-custom"></span>
+              <span class="toggle-text">Active Deduplication</span>
+            </label>
+            <div class="tab-pills">
+              <button class="pill-btn active" data-tab="receipts" id="tabReceipts">Invoices (<span id="countReceipts">0</span>)</button>
+              <button class="pill-btn" data-tab="items" id="tabItems">Line Items (<span id="countItems">0</span>)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ledger Table -->
+        <div class="ledger-table-container">
+          <!-- Invoices View -->
+          <table class="ledger-table" id="receiptsTable">
+            <thead>
+              <tr>
+                <th style="width: 120px;">Date</th>
+                <th style="width: 170px;">Invoice / Transaction</th>
+                <th>Ad Account</th>
+                <th style="width: 100px;">Currency</th>
+                <th style="width: 130px; text-align: right;">Amount</th>
+                <th style="width: 140px;">Payment Method</th>
+                <th style="width: 90px; text-align: center;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="receiptsBody">
+              <tr class="empty-row">
+                <td colspan="7">
+                  <div class="empty-state">
+                    <p>No receipt files staged yet. Drag PDFs into the dropzone or load the demo batch.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Line Items View (Hidden by default) -->
+          <table class="ledger-table visually-hidden" id="itemsTable">
+            <thead>
+              <tr>
+                <th style="width: 120px;">Date</th>
+                <th style="width: 150px;">Invoice Ref</th>
+                <th>Campaign Name</th>
+                <th style="width: 140px;">Account ID</th>
+                <th style="width: 90px;">Currency</th>
+                <th style="width: 130px; text-align: right;">Line Amount</th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody">
+              <tr class="empty-row">
+                <td colspan="6">
+                  <div class="empty-state">
+                    <p>No line items loaded.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Export Bottom Bar -->
+        <div class="export-footer">
+          <div class="export-summary-text">
+            Extracted data stays in your browser memory. Exporting builds an authentic formatted binary workbook.
+          </div>
+          <div class="export-actions">
+            <button id="btnExportCsv" class="btn btn-secondary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV (.csv)
+            </button>
+            <button id="btnExportExcel" class="btn btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Export Excel Workbook (.xlsx)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DESKTOP APP DOWNLOAD & SECURITY PROMISES -->
+    <section class="downloads-section" id="downloads">
+      <div class="section-header">
+        <span class="terminal-tag">NATIVE WINDOWS EDITIONS</span>
+        <h2>High-Throughput Offline Desktop App</h2>
+        <p class="section-desc">
+          When dealing with 10,000+ invoices across dozens of agency clients, run the native desktop runtime. Built on .NET Framework 4.8 with custom low-memory sequential stream parsing.
+        </p>
+      </div>
+
+      <div class="downloads-grid">
+        <!-- Setup Installer Card -->
+        <div class="download-card featured">
+          <div class="card-badge">RECOMMENDED FOR TEAMS</div>
+          <h3>Setup Installer</h3>
+          <p class="card-desc">Single-click installer under LocalAppData. Creates Start Menu and Desktop shortcuts. Uninstalls cleanly via Windows Settings.</p>
+          
+          <ul class="spec-list">
+            <li><span>Target OS</span><strong>Windows 10, 11 (or 7 SP1)</strong></li>
+            <li><span>Runtime</span><strong>.NET 4.8 (Pre-installed)</strong></li>
+            <li><span>Admin Rights</span><strong>None Required (Standard User)</strong></li>
+            <li><span>Binary</span><code>MetaReceiptsLite-Setup-v1.0.12.exe</code></li>
+          </ul>
+
+          <a href="../dist/MetaReceiptsLite-Setup-v1.0.12.exe" class="btn btn-primary btn-block" download>
+            Download Setup Installer (.exe)
+          </a>
+        </div>
+
+        <!-- Portable ZIP Card -->
+        <div class="download-card">
+          <div class="card-badge neutral">PORTABLE EDITION</div>
+          <h3>Standalone Portable ZIP</h3>
+          <p class="card-desc">Zero registry keys, zero system changes. Unpack into any folder or encrypted USB drive and run immediately.</p>
+          
+          <ul class="spec-list">
+            <li><span>Deployment</span><strong>Unpack & Execute</strong></li>
+            <li><span>Dependencies</span><strong>Bundled in directory</strong></li>
+            <li><span>Footprint</span><strong>~4.5 MB compressed</strong></li>
+            <li><span>Package</span><code>MetaReceiptsLite-v1.0.12.zip</code></li>
+          </ul>
+
+          <a href="../dist/MetaReceiptsLite-v1.0.12.zip" class="btn btn-secondary btn-block" download>
+            Download Portable (.zip)
+          </a>
+        </div>
+      </div>
+
+      <!-- Comparison Matrix -->
+      <div class="comparison-card">
+        <h3>Architecture Comparison: Native Local vs SaaS Cloud Converters</h3>
+        <div class="table-responsive">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Attribute</th>
+                <th>Meta Receipts Lite (Local Engine)</th>
+                <th>Standard SaaS Web Converters</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Data Security</strong></td>
+                <td class="col-highlight">100% Air-gapped. Zero bytes leave your machine.</td>
+                <td class="col-dim">PDFs uploaded to 3rd-party cloud servers & storage.</td>
+              </tr>
+              <tr>
+                <td><strong>Deduplication</strong></td>
+                <td class="col-highlight">Invoice ID + Timestamp hashing prevents double-billing.</td>
+                <td class="col-dim">Rarely supported; results in double-counted spend.</td>
+              </tr>
+              <tr>
+                <td><strong>Throughput</strong></td>
+                <td class="col-highlight">500+ PDFs processed in under 4 seconds.</td>
+                <td class="col-dim">Rate-limited, throttled queues, 10 files/batch limits.</td>
+              </tr>
+              <tr>
+                <td><strong>Pricing</strong></td>
+                <td class="col-highlight">Open Source / Free MIT License.</td>
+                <td class="col-dim">$29 - $99/month subscription fees.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <strong>Meta Receipts Lite</strong> &bull; MIT Licensed. Designed for privacy-first financial operations.
+      </div>
+      <div class="footer-right">
+        <span>No ad accounts or payment credentials are ever touched.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,152 @@
+/**
+ * Meta Receipts Design System — CSS Tokens
+ * High-precision financial engineering tokens for Meta Receipts Lite (Meta2Excel)
+ * Layers: Primitive -> Semantic -> Component
+ */
+
+:root {
+  /* ==========================================================================
+     1. Primitive Tokens
+     ========================================================================== */
+  --slate-950: #0B0F17;
+  --slate-900: #111827;
+  --slate-850: #162032;
+  --slate-800: #1E293B;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-500: #64748B;
+  --slate-400: #94A3B8;
+  --slate-300: #CBD5E1;
+  --slate-200: #E2E8F0;
+  --slate-100: #F1F5F9;
+  --slate-50:  #F8FAFC;
+
+  --emerald-900: #064E3B;
+  --emerald-800: #065F46;
+  --emerald-700: #047857;
+  --emerald-600: #059669;
+  --emerald-500: #10B981;
+  --emerald-400: #34D399;
+  --emerald-100: #D1FAE5;
+
+  --blue-900: #1E3A8A;
+  --blue-700: #1D4ED8;
+  --blue-600: #2563EB;
+  --blue-500: #3B82F6;
+  --blue-100: #DBEAFE;
+
+  --amber-600: #D97706;
+  --amber-500: #F59E0B;
+  --amber-100: #FEF3C7;
+
+  --rose-600: #E11D48;
+  --rose-500: #F43F5E;
+  --rose-100: #FFE4E6;
+
+  /* Typography primitives */
+  --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --font-size-2xl: 28px;
+  --font-size-3xl: 36px;
+  --font-size-4xl: 48px;
+
+  --radius-sm: 4px;
+  --radius-base: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+
+  /* ==========================================================================
+     2. Semantic Tokens (Default Dark / High-Precision Workbench)
+     ========================================================================== */
+  --bg-canvas: var(--slate-950);
+  --bg-surface: var(--slate-900);
+  --bg-surface-elev: var(--slate-850);
+  --bg-surface-active: var(--slate-800);
+
+  --border-subtle: var(--slate-800);
+  --border-strong: var(--slate-700);
+
+  --text-primary: var(--slate-100);
+  --text-secondary: var(--slate-400);
+  --text-muted: var(--slate-500);
+
+  --accent-primary: var(--emerald-500);
+  --accent-primary-hover: var(--emerald-400);
+  --accent-secondary: var(--blue-500);
+  --accent-meta: #1877F2;
+
+  --status-success: var(--emerald-500);
+  --status-warning: var(--amber-500);
+  --status-danger: var(--rose-500);
+
+  --code-text: var(--emerald-400);
+
+  /* Component mappings */
+  --header-bg: var(--bg-surface);
+  --header-border: var(--border-subtle);
+
+  --dropzone-bg: rgba(22, 32, 50, 0.45);
+  --dropzone-border: var(--slate-700);
+  --dropzone-border-active: var(--emerald-500);
+
+  --btn-primary-bg: var(--emerald-500);
+  --btn-primary-text: #052317;
+  --btn-primary-hover: var(--emerald-400);
+
+  --btn-secondary-bg: var(--slate-800);
+  --btn-secondary-border: var(--slate-700);
+  --btn-secondary-text: var(--slate-100);
+  --btn-secondary-hover: var(--slate-700);
+
+  --table-header-bg: var(--slate-850);
+  --table-border: var(--slate-800);
+  --table-row-hover: rgba(30, 41, 59, 0.6);
+}
+
+/* Light Theme (Accounting Ledger Mode) */
+[data-theme="light"] {
+  --bg-canvas: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elev: #F1F5F9;
+  --bg-surface-active: #E2E8F0;
+
+  --border-subtle: #E2E8F0;
+  --border-strong: #CBD5E1;
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+
+  --accent-primary: #15803D; /* Deeper ledger green for light WCAG AAA */
+  --accent-primary-hover: #166534;
+  --accent-secondary: #2563EB;
+
+  --code-text: #166534;
+
+  --dropzone-bg: #F1F5F9;
+  --dropzone-border: #CBD5E1;
+  --dropzone-border-active: #15803D;
+
+  --btn-primary-bg: #15803D;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-hover: #166534;
+
+  --btn-secondary-bg: #FFFFFF;
+  --btn-secondary-border: #CBD5E1;
+  --btn-secondary-text: #0F172A;
+  --btn-secondary-hover: #F1F5F9;
+
+  --table-header-bg: #F1F5F9;
+  --table-border: #E2E8F0;
+  --table-row-hover: #F8FAFC;
+}
+
