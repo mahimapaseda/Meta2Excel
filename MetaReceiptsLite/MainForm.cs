@@ -33,7 +33,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.1.2");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.1.3");
 
         private Panel _header;
         private Label _brandTitle;
@@ -458,6 +458,14 @@ namespace MetaReceiptsLite
             }
             button.FlatAppearance.BorderColor = _theme.Border;
             button.FlatAppearance.MouseOverBackColor = _theme.Elevated;
+            var themedButton = button as ThemeButton;
+            if (themedButton != null)
+            {
+                themedButton.DisabledTextColor = _theme.DisabledText;
+                themedButton.DisabledBackColor = _theme.DisabledSurface;
+                themedButton.ThemeBorderColor = _theme.Border;
+                themedButton.Invalidate();
+            }
         }
 
         private static Label SectionLabel(string text)
@@ -507,7 +515,7 @@ namespace MetaReceiptsLite
 
         private static Button MakeButton(string text, Color back, Color fore, bool primary)
         {
-            var b = new Button
+            var b = new ThemeButton
             {
                 Text = text,
                 AutoSize = true,
