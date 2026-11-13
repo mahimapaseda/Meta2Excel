@@ -58,12 +58,12 @@ a {
 }
 
 .brand-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  display: block;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 100, 224, 0.35)) drop-shadow(0 2px 6px rgba(16, 185, 129, 0.35));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .brand:hover .brand-logo {
