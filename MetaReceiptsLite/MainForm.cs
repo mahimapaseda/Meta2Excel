@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MetaReceiptsLite.Updater;
 
 namespace MetaReceiptsLite
 {
@@ -27,6 +28,10 @@ namespace MetaReceiptsLite
         private readonly List<LineItem> _items = new List<LineItem>();
         private readonly ReceiptDeduper _deduper = new ReceiptDeduper();
 
+        private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
+        private readonly IUpdateService _updateService = new UpdateService();
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.0.13");
+
         private Panel _header;
         private Label _brandTitle;
         private Label _brandSub;
@@ -37,6 +42,7 @@ namespace MetaReceiptsLite
         private Button _btnClear;
         private Button _btnCancel;
         private Button _btnRemove;
+        private Button _btnUpdate;
         private ContextMenuStrip _csvMenu;
 
         private Panel _content;
@@ -126,7 +132,7 @@ namespace MetaReceiptsLite
             _brandSub = new Label
             {
                 AutoSize = true,
-                Text = "Convert Meta Ads receipt PDFs into Excel or CSV",
+                Text = "Convert Meta Ads receipt PDFs into Excel or CSV • v" + _currentVersion,
                 ForeColor = Color.FromArgb(190, 210, 230),
                 Location = new Point(18, 40),
                 BackColor = Color.Transparent
@@ -148,6 +154,7 @@ namespace MetaReceiptsLite
             _btnClear = MakeButton("Clear", Color.FromArgb(70, 90, 110), Color.White, false);
             _btnCancel = MakeButton("Cancel", Color.FromArgb(150, 70, 70), Color.White, false);
             _btnRemove = MakeButton("Remove selected", Color.FromArgb(70, 90, 110), Color.White, false);
+            _btnUpdate = MakeButton("Check for Updates", Color.FromArgb(50, 75, 100), Color.White, false);
 
             _csvMenu = new ContextMenuStrip();
             _csvMenu.Items.Add("Line items...", null, (s, e) => ExportCsv(CsvMode.LineItems));
@@ -161,6 +168,7 @@ namespace MetaReceiptsLite
             _actions.Controls.Add(_btnClear);
             _actions.Controls.Add(_btnCancel);
             _actions.Controls.Add(_btnRemove);
+            _actions.Controls.Add(_btnUpdate);
 
             _header.Controls.Add(_actions);
             _header.Controls.Add(_brandTitle);
@@ -305,7 +313,14 @@ namespace MetaReceiptsLite
             _content.Controls.Add(_dropZone);
             LayoutDropZone();
             Resize += (s, e) => ApplySplitterDistance();
-            Shown += (s, e) => ApplySplitterDistance();
+            Shown += async (s, e) =>
+            {
+                ApplySplitterDistance();
+                if (_updateConfig.CheckOnStartup)
+                {
+                    await CheckForUpdatesAsync(manual: false);
+                }
+            };
         }
 
         private void BuildStatus()
@@ -482,6 +497,7 @@ namespace MetaReceiptsLite
                 if (_cts != null) _cts.Cancel();
             };
             _btnRemove.Click += (s, e) => RemoveSelectedReceipts();
+            _btnUpdate.Click += async (s, e) => await CheckForUpdatesAsync(manual: true);
             _filterCampaign.TextChanged += (s, e) => RefreshItemGrid();
         }
 
@@ -979,6 +995,78 @@ namespace MetaReceiptsLite
             }
         }
 
+        private async Task CheckForUpdatesAsync(bool manual)
+        {
+            if (manual)
+            {
+                _statusLabel.Text = "Checking for updates on GitHub...";
+                _btnUpdate.Enabled = false;
+            }
+
+            try
+            {
+                var result = await _updateService.CheckForUpdatesAsync(_updateConfig, _currentVersion);
+                if (result.IsSuccess)
+                {
+                    if (result.HasUpdate)
+                    {
+                        _btnUpdate.Text = "Update to v" + result.LatestVersion + "!";
+                        _btnUpdate.BackColor = ColorExcel;
+                        _statusLabel.Text = "Update v" + result.LatestVersion + " is available!";
+
+                        using (var dlg = new UpdateDialog(result, _updateConfig, _updateService))
+                        {
+                            dlg.ShowDialog(this);
+                        }
+                    }
+                    else if (manual)
+                    {
+                        _statusLabel.Text = "Meta Receipts Lite is up to date (v" + _currentVersion + ").";
+                        MessageBox.Show(this,
+                            $"You are running the latest version of Meta Receipts Lite (v{_currentVersion}).",
+                            "Up to Date", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+                else if (manual)
+                {
+                    _statusLabel.Text = "Update check failed.";
+                    var msg = result.ErrorMessage;
+                    if (result.HttpStatusCode == 401 || result.HttpStatusCode == 404 || !_updateConfig.HasToken)
+                    {
+                        var ask = MessageBox.Show(this,
+                            $"{msg}\n\nWould you like to configure your GitHub Personal Access Token now?",
+                            "GitHub Authentication Required", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        if (ask == DialogResult.Yes)
+                        {
+                            using (var dlg = new UpdateSettingsDialog(_updateConfig, _updateService))
+                            {
+                                dlg.ShowDialog(this);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show(this, $"Failed to check for updates:\n{msg}", "Update Check Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (manual)
+                {
+                    _statusLabel.Text = "Update check error.";
+                    MessageBox.Show(this, $"Unexpected error checking for updates:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            finally
+            {
+                if (manual && !_busy)
+                {
+                    _btnUpdate.Enabled = true;
+                }
+            }
+        }
+
         private void SetBusy(bool busy)
         {
             _busy = busy;
@@ -988,6 +1076,7 @@ namespace MetaReceiptsLite
             _btnExportCsv.Enabled = !busy;
             _btnClear.Enabled = !busy;
             _btnRemove.Enabled = !busy;
+            _btnUpdate.Enabled = !busy;
             _btnCancel.Enabled = busy;
             UseWaitCursor = busy;
         }
