@@ -95,3 +95,4 @@ namespace MetaReceiptsLite.Updater
         public string StatusMessage { get; set; } = string.Empty;
     }
 }
+

@@ -137,3 +137,4 @@ MetaReceiptsLite/
   │    └── UpdateSettingsDialog.cs   # In-app PAT & Repo configuration modal
   └── MainForm.cs                    # Integrated startup background check & update button
 ```
+

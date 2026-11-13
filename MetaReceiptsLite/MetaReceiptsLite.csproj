@@ -7,6 +7,7 @@
     <RootNamespace>MetaReceiptsLite</RootNamespace>
     <AssemblyName>MetaReceiptsLite</AssemblyName>
     <ApplicationIcon>AppIcon.ico</ApplicationIcon>
+    <Version>1.0.14</Version>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
