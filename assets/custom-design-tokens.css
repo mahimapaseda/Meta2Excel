@@ -1,0 +1,28 @@
+/* Custom Design Tokens – Meta blue ↔ Excel green */
+:root {
+  --color-primary: #0a66c2;   /* Meta blue */
+  --color-accent:  #107c10;   /* Excel green */
+  --color-background: #f9fafb; /* Light neutral */
+  --color-surface: #ffffff;   /* Card background */
+  --color-text-primary: #111111;
+  --color-text-secondary: #555555;
+
+  /* Typography */
+  --font-base: "Inter", system-ui, sans-serif;
+  --font-heading: "Inter", system-ui, sans-serif;
+  --size-base: 1rem;          /* 16px */
+  --size-h1: 2.5rem;          /* 40px */
+  --size-h2: 2rem;            /* 32px */
+  --size-h3: 1.5rem;          /* 24px */
+  --size-lead: 1.125rem;      /* 18px */
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.5rem;    /* 24px */
+  --space-6: 2rem;      /* 32px */
+}
+
