@@ -2,7 +2,7 @@
 ; Compile with ISCC.exe after: dotnet build -c Release
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.1.1"
+  #define MyAppVersion "1.1.2"
 #endif
 
 #define MyAppName "Meta Receipts Lite"

@@ -13,6 +13,8 @@ namespace MetaReceiptsLite
         public Color Muted { get; private set; }
         public Color Accent { get; private set; }
         public Color Selection { get; private set; }
+        public Color DisabledText { get; private set; }
+        public Color DisabledSurface { get; private set; }
 
         private ThemePalette(bool dark)
         {
@@ -25,6 +27,8 @@ namespace MetaReceiptsLite
             Muted = dark ? Color.FromArgb(203, 213, 225) : Color.FromArgb(71, 85, 105);
             Accent = dark ? Color.FromArgb(52, 211, 153) : Color.FromArgb(21, 128, 61);
             Selection = dark ? Color.FromArgb(30, 41, 59) : Color.FromArgb(219, 234, 254);
+            DisabledText = dark ? Color.FromArgb(203, 213, 225) : Color.FromArgb(71, 85, 105);
+            DisabledSurface = dark ? Color.FromArgb(30, 41, 59) : Color.FromArgb(241, 245, 249);
         }
 
         public static ThemePalette Light => new ThemePalette(false);

@@ -33,7 +33,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.1.1");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.1.2");
 
         private Panel _header;
         private Label _brandTitle;
@@ -396,11 +396,9 @@ namespace MetaReceiptsLite
                 }
                 else if (control is Button button)
                 {
-                    bool primary = button == _btnAdd || button == _dropBrowse || button == _btnExportExcel;
-                    button.BackColor = primary ? _theme.Accent : _theme.Surface;
-                    button.ForeColor = primary && _theme.IsDark ? Color.FromArgb(5, 35, 23) : (primary ? Color.White : _theme.Text);
-                    button.FlatAppearance.BorderColor = _theme.Border;
-                    button.FlatAppearance.MouseOverBackColor = _theme.Elevated;
+                    StyleButton(button);
+                    button.EnabledChanged -= ThemeButton_EnabledChanged;
+                    button.EnabledChanged += ThemeButton_EnabledChanged;
                 }
                 else if (control is TextBox textBox)
                 {
@@ -437,6 +435,29 @@ namespace MetaReceiptsLite
             _btnTheme.Text = _theme.IsDark ? "Light mode" : "Dark mode";
             _btnTheme.AccessibleName = _theme.IsDark ? "Switch to light mode" : "Switch to dark mode";
             _dropZone.Invalidate();
+        }
+
+        private void ThemeButton_EnabledChanged(object sender, EventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null) StyleButton(button);
+        }
+
+        private void StyleButton(Button button)
+        {
+            bool primary = button == _btnAdd || button == _dropBrowse || button == _btnExportExcel;
+            if (!button.Enabled)
+            {
+                button.BackColor = _theme.DisabledSurface;
+                button.ForeColor = _theme.DisabledText;
+            }
+            else
+            {
+                button.BackColor = primary ? _theme.Accent : _theme.Surface;
+                button.ForeColor = primary && _theme.IsDark ? Color.FromArgb(5, 35, 23) : (primary ? Color.White : _theme.Text);
+            }
+            button.FlatAppearance.BorderColor = _theme.Border;
+            button.FlatAppearance.MouseOverBackColor = _theme.Elevated;
         }
 
         private static Label SectionLabel(string text)
