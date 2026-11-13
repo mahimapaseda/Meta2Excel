@@ -4,14 +4,14 @@
   Build Meta Receipts Lite Release folder, portable ZIP, Setup.exe, and SHA256 checksums.
 
 .PARAMETER Version
-  Release version string (default 1.0.14). Passed into the Inno script as MyAppVersion.
+  Release version string (default 1.0.15). Passed into the Inno script as MyAppVersion.
 
 .PARAMETER SignThumbprint
   Optional Authenticode certificate thumbprint. If set (or $env:MRL_SIGN_THUMBPRINT),
   signs Setup.exe and MetaReceiptsLite.exe when signtool is available.
 #>
 param(
-    [string]$Version = "1.0.14",
+    [string]$Version = "1.0.15",
     [string]$SignThumbprint = $env:MRL_SIGN_THUMBPRINT
 )
 
