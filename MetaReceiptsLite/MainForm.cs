@@ -16,13 +16,14 @@ namespace MetaReceiptsLite
     {
         private const int PreviewRowCap = 5000;
 
-        // Brand palette (matches Excel export header; cheap solid fills for old GPUs)
-        private static readonly Color ColorNavy = Color.FromArgb(31, 78, 120);      // #1F4E78
-        private static readonly Color ColorExcel = Color.FromArgb(33, 115, 70);     // #217346
-        private static readonly Color ColorCanvas = Color.FromArgb(245, 247, 250);  // #F5F7FA
+        // Ledger Light tokens from docs/DESIGN_SYSTEM.md. Solid fills keep rendering inexpensive.
+        private static readonly Color ColorNavy = Color.FromArgb(15, 23, 42);       // #0F172A
+        private static readonly Color ColorExcel = Color.FromArgb(21, 128, 61);    // #15803D
+        private static readonly Color ColorCanvas = Color.FromArgb(248, 250, 252); // #F8FAFC
         private static readonly Color ColorPanel = Color.White;
-        private static readonly Color ColorBorder = Color.FromArgb(210, 218, 226);
-        private static readonly Color ColorMuted = Color.FromArgb(90, 105, 120);
+        private static readonly Color ColorBorder = Color.FromArgb(226, 232, 240); // #E2E8F0
+        private static readonly Color ColorMuted = Color.FromArgb(71, 85, 105);    // #475569
+        private static readonly Color ColorElevated = Color.FromArgb(241, 245, 249); // #F1F5F9
 
         private readonly List<Receipt> _receipts = new List<Receipt>();
         private readonly List<LineItem> _items = new List<LineItem>();
@@ -30,7 +31,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.0.19");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.0.20");
 
         private Panel _header;
         private Label _brandTitle;
@@ -67,10 +68,10 @@ namespace MetaReceiptsLite
 
         public MainForm()
         {
-            Text = "Meta Receipts -> Excel";
-            Width = 1040;
-            Height = 680;
-            MinimumSize = new Size(860, 520);
+            Text = "Meta Receipts Lite";
+            Width = 1180;
+            Height = 760;
+            MinimumSize = new Size(900, 600);
             StartPosition = FormStartPosition.CenterScreen;
             AutoScaleMode = AutoScaleMode.Dpi;
             Font = SystemFonts.MessageBoxFont;
@@ -115,46 +116,46 @@ namespace MetaReceiptsLite
             _header = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 86,
-                BackColor = ColorNavy,
-                Padding = new Padding(16, 10, 16, 10)
+                Height = 112,
+                BackColor = ColorPanel,
+                Padding = new Padding(18, 10, 18, 8)
             };
 
             _brandTitle = new Label
             {
                 AutoSize = true,
-                Text = "Meta Receipts -> Excel",
-                ForeColor = Color.White,
-                Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 14f, FontStyle.Bold),
-                Location = new Point(16, 12),
+                Text = "Meta Receipts Lite",
+                ForeColor = ColorNavy,
+                Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 16f, FontStyle.Bold),
+                Location = new Point(18, 10),
                 BackColor = Color.Transparent
             };
             _brandSub = new Label
             {
                 AutoSize = true,
-                Text = "Convert Meta Ads receipt PDFs into Excel or CSV • v" + _currentVersion,
-                ForeColor = Color.FromArgb(190, 210, 230),
-                Location = new Point(18, 40),
+                Text = "Turn Meta Ads receipt PDFs into a clean Excel or CSV ledger  ·  v" + _currentVersion,
+                ForeColor = ColorMuted,
+                Location = new Point(20, 40),
                 BackColor = Color.Transparent
             };
 
             _actions = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 36,
+                Height = 48,
                 FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                Padding = new Padding(8, 2, 8, 2),
-                BackColor = Color.FromArgb(24, 62, 96)
+                WrapContents = true,
+                Padding = new Padding(0, 4, 0, 2),
+                BackColor = ColorPanel
             };
 
-            _btnAdd = MakeButton("Add PDFs...", ColorExcel, Color.White, true);
-            _btnExportExcel = MakeButton("Export Excel...", Color.FromArgb(46, 100, 150), Color.White, true);
-            _btnExportCsv = MakeButton("Export CSV ▾", Color.FromArgb(46, 100, 150), Color.White, true);
-            _btnClear = MakeButton("Clear", Color.FromArgb(70, 90, 110), Color.White, false);
-            _btnCancel = MakeButton("Cancel", Color.FromArgb(150, 70, 70), Color.White, false);
-            _btnRemove = MakeButton("Remove selected", Color.FromArgb(70, 90, 110), Color.White, false);
-            _btnUpdate = MakeButton("Check for Updates", Color.FromArgb(50, 75, 100), Color.White, false);
+            _btnAdd = MakeButton("&Add PDFs...", ColorExcel, Color.White, true);
+            _btnExportExcel = MakeButton("Export E&xcel...", ColorNavy, Color.White, true);
+            _btnExportCsv = MakeButton("Export C&SV  ▾", ColorPanel, ColorNavy, false);
+            _btnClear = MakeButton("C&lear", ColorPanel, ColorMuted, false);
+            _btnCancel = MakeButton("Ca&ncel", Color.FromArgb(190, 18, 60), Color.White, false);
+            _btnRemove = MakeButton("&Remove selected", ColorPanel, ColorMuted, false);
+            _btnUpdate = MakeButton("Check for &updates", ColorPanel, ColorMuted, false);
 
             _csvMenu = new ContextMenuStrip();
             _csvMenu.Items.Add("Line items...", null, (s, e) => ExportCsv(CsvMode.LineItems));
@@ -288,7 +289,7 @@ namespace MetaReceiptsLite
             _dropTitle = new Label
             {
                 AutoSize = true,
-                Text = "Drop Meta receipt PDFs here",
+                Text = "Start with your Meta receipt PDFs",
                 Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 13f, FontStyle.Bold),
                 ForeColor = ColorNavy,
                 BackColor = Color.Transparent
@@ -296,12 +297,16 @@ namespace MetaReceiptsLite
             _dropHint = new Label
             {
                 AutoSize = true,
-                Text = "or click Browse to select files / folders — processing stays off the UI thread",
+                Text = "Drag files or folders into this window, or browse. Your PDFs stay on this PC.",
                 ForeColor = ColorMuted,
                 BackColor = Color.Transparent
             };
             _dropBrowse = MakeButton("Browse PDFs...", ColorExcel, Color.White, true);
             _dropBrowse.Width = 140;
+            _dropZone.AccessibleName = "Add Meta receipt PDF files";
+            _dropZone.AccessibleDescription = "Drop PDF files or folders here, or browse to select them. Files are processed locally.";
+            _filterCampaign.AccessibleName = "Filter line items";
+            _filterCampaign.AccessibleDescription = "Filter by branch, campaign, or ad set.";
 
             _dropZone.Controls.Add(_dropTitle);
             _dropZone.Controls.Add(_dropHint);
@@ -327,9 +332,10 @@ namespace MetaReceiptsLite
         {
             _status = new StatusStrip
             {
-                BackColor = Color.FromArgb(236, 240, 244),
+                BackColor = ColorCanvas,
                 SizingGrip = true,
-                RenderMode = ToolStripRenderMode.System
+                RenderMode = ToolStripRenderMode.System,
+                ForeColor = ColorMuted
             };
             _statusLabel = new ToolStripStatusLabel("Ready")
             {
@@ -348,7 +354,7 @@ namespace MetaReceiptsLite
                 Dock = DockStyle.Top,
                 AutoSize = false,
                 Height = 24,
-                Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Bold),
+                Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 9.5f, FontStyle.Bold),
                 ForeColor = ColorNavy,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(2, 0, 0, 0)
@@ -391,8 +397,8 @@ namespace MetaReceiptsLite
             {
                 Text = text,
                 AutoSize = true,
-                MinimumSize = new Size(primary ? 110 : 90, 28),
-                Height = 28,
+                MinimumSize = new Size(primary ? 124 : 96, 34),
+                Height = 34,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = back,
                 ForeColor = fore,
@@ -400,9 +406,12 @@ namespace MetaReceiptsLite
                 Margin = new Padding(0, 2, 8, 2),
                 UseVisualStyleBackColor = false
             };
-            b.FlatAppearance.BorderSize = 0;
-            b.FlatAppearance.MouseOverBackColor = ControlPaint.Light(back, 0.12f);
-            b.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(back, 0.08f);
+            b.FlatAppearance.BorderSize = primary ? 0 : 1;
+            b.FlatAppearance.BorderColor = ColorBorder;
+            b.FlatAppearance.MouseOverBackColor = primary ? ControlPaint.Light(back, 0.12f) : ColorElevated;
+            b.FlatAppearance.MouseDownBackColor = primary ? ControlPaint.Dark(back, 0.08f) : Color.FromArgb(226, 232, 240);
+            b.AccessibleRole = AccessibleRole.PushButton;
+            b.TabStop = true;
             return b;
         }
 
@@ -431,32 +440,34 @@ namespace MetaReceiptsLite
                 EnableHeadersVisualStyles = false,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = ColorNavy,
-                    ForeColor = Color.White,
-                    Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Bold),
+                    BackColor = ColorElevated,
+                    ForeColor = ColorMuted,
+                    Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 9f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
-                    SelectionBackColor = ColorNavy,
-                    SelectionForeColor = Color.White,
+                    SelectionBackColor = ColorElevated,
+                    SelectionForeColor = ColorNavy,
                     Padding = new Padding(4, 2, 4, 2)
                 },
-                ColumnHeadersHeight = 28,
+                ColumnHeadersHeight = 36,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = ColorPanel,
-                    ForeColor = Color.FromArgb(30, 40, 50),
-                    SelectionBackColor = Color.FromArgb(210, 228, 242),
-                    SelectionForeColor = Color.FromArgb(20, 40, 60),
-                    Padding = new Padding(4, 1, 4, 1)
+                    ForeColor = ColorNavy,
+                    SelectionBackColor = Color.FromArgb(219, 234, 254),
+                    SelectionForeColor = ColorNavy,
+                    Padding = new Padding(8, 2, 8, 2)
                 },
                 AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Color.FromArgb(248, 250, 252),
-                    ForeColor = Color.FromArgb(30, 40, 50),
-                    SelectionBackColor = Color.FromArgb(210, 228, 242),
-                    SelectionForeColor = Color.FromArgb(20, 40, 60)
+                    ForeColor = ColorNavy,
+                    SelectionBackColor = Color.FromArgb(219, 234, 254),
+                    SelectionForeColor = ColorNavy
                 },
-                RowTemplate = { Height = 24 }
+                RowTemplate = { Height = 30 },
+                StandardTab = true,
+                TabStop = true
             };
             return g;
         }
@@ -475,7 +486,7 @@ namespace MetaReceiptsLite
         {
             var rect = _dropZone.ClientRectangle;
             rect.Inflate(-18, -18);
-            using (var pen = new Pen(_dragHighlight ? ColorExcel : ColorBorder, _dragHighlight ? 2.5f : 1.5f))
+            using (var pen = new Pen(_dragHighlight ? ColorExcel : Color.FromArgb(203, 213, 225), _dragHighlight ? 2.5f : 1.5f))
             {
                 pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
                 e.Graphics.DrawRectangle(pen, rect);
