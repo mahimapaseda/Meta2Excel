@@ -169,7 +169,7 @@ namespace MetaReceiptsLite.Updater
 
             _btnSettings = new Button
             {
-                Text = "⚙ Token Config",
+                Text = "Update Now",
                 Width = 110,
                 Height = 32,
                 FlatStyle = FlatStyle.Flat,

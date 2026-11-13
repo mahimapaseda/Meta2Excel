@@ -7,9 +7,9 @@
     <RootNamespace>MetaReceiptsLite</RootNamespace>
     <AssemblyName>MetaReceiptsLite</AssemblyName>
     <ApplicationIcon>AppIcon.ico</ApplicationIcon>
-    <Version>1.0.17</Version>
-    <AssemblyVersion>1.0.17.0</AssemblyVersion>
-    <FileVersion>1.0.17.0</FileVersion>
+    <Version>1.0.19</Version>
+    <AssemblyVersion>1.0.19.0</AssemblyVersion>
+    <FileVersion>1.0.19.0</FileVersion>
     <Company>Meta2Excel</Company>
     <Product>Meta Receipts Lite</Product>
     <Description>Meta Ads Receipts PDF to Excel Converter</Description>
