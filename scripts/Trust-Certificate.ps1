@@ -22,3 +22,4 @@ Import-Certificate -FilePath $cerPath -CertStoreLocation "Cert:\LocalMachine\Tru
 
 Write-Host "Success! Meta Receipts Lite is now registered as a trusted publisher on this PC." -ForegroundColor Green
 Write-Host "Windows Defender SmartScreen will no longer warn when running releases signed by this certificate." -ForegroundColor Green
+

@@ -51,3 +51,4 @@ $pubStore.Close()
 # Set environment variable for the session
 [System.Environment]::SetEnvironmentVariable("MRL_SIGN_THUMBPRINT", $cert.Thumbprint, "User")
 Write-Host "Saved MRL_SIGN_THUMBPRINT to User Environment." -ForegroundColor Green
+

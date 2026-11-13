@@ -10,7 +10,14 @@ namespace MetaReceiptsLite.Updater
         public const string DefaultOwner = "mahimapaseda";
         public const string DefaultRepo = "Meta2Excel";
 
-        public string GitHubToken { get; set; } = string.Empty;
+        // Built-in read-only token for private release asset downloads.
+        // Scope: Contents: Read-only, Repository: Meta2Excel only.
+        // Users can override via MRL_GITHUB_TOKEN env var or the in-app Settings dialog.
+        private const string BuiltInToken =
+            "github_pat_11BJUXX6A05rOFNvwGjVPu_" +
+            "qfZuTXPC91ShWQLTSASKoGnEFZ7nlX4u3U7lxgOoGJsYCVXMWJB9ChKoRp9";
+
+        public string GitHubToken { get; set; } = BuiltInToken;
         public string RepoOwner { get; set; } = DefaultOwner;
         public string RepoName { get; set; } = DefaultRepo;
         public bool CheckOnStartup { get; set; } = true;
