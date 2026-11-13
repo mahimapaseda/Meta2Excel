@@ -33,7 +33,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.1.0");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.1.1");
 
         private Panel _header;
         private Label _brandTitle;

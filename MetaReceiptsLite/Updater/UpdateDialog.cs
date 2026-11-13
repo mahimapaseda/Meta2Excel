@@ -184,15 +184,15 @@ namespace MetaReceiptsLite.Updater
 
             _btnAction = new Button
             {
-                Text = "Update Now",
-                Width = 125,
+                Text = "Download Update",
+                Width = 145,
                 Height = 32,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = ColorExcel,
                 ForeColor = Color.White,
                 Font = new Font(Font.FontFamily, 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Location = new Point(400, 10),
+                Location = new Point(380, 10),
                 Anchor = AnchorStyles.Right | AnchorStyles.Bottom
             };
             _btnAction.FlatAppearance.BorderSize = 0;
@@ -200,7 +200,7 @@ namespace MetaReceiptsLite.Updater
 
             _btnCancel = new Button
             {
-                Text = "Later",
+                Text = "Close",
                 Width = 90,
                 Height = 32,
                 FlatStyle = FlatStyle.Flat,

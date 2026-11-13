@@ -11,7 +11,7 @@
   signs Setup.exe and MetaReceiptsLite.exe when signtool is available.
 #>
 param(
-    [string]$Version = "1.1.0",
+    [string]$Version = "1.1.1",
     [string]$SignThumbprint = $env:MRL_SIGN_THUMBPRINT
 )
 
@@ -23,9 +23,11 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";
             [System.Environment]::GetEnvironmentVariable("Path", "User")
 
 Write-Host "==> Building Release (net48)..." -ForegroundColor Cyan
-$locked = Get-Process -Name "MetaReceiptsLite" -ErrorAction SilentlyContinue
+$releaseExe = [System.IO.Path]::GetFullPath((Join-Path $root "MetaReceiptsLite\bin\Release\net48\MetaReceiptsLite.exe"))
+$locked = Get-Process -Name "MetaReceiptsLite" -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -and [System.IO.Path]::GetFullPath($_.Path) -eq $releaseExe }
 if ($locked) {
-    throw "MetaReceiptsLite.exe is running (PID $($locked.Id -join ', ')). Close it and retry."
+    throw "The release-build executable is running (PID $($locked.Id -join ', ')). Close it and retry."
 }
 
 dotnet build -c Release
