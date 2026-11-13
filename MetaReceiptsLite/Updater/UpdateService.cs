@@ -271,6 +271,20 @@ namespace MetaReceiptsLite.Updater
             if (!File.Exists(installerPath))
                 throw new FileNotFoundException("Installer not found at specified path.", installerPath);
 
+            // Unblock Mark-of-the-Web (Zone.Identifier) so Windows SmartScreen does not trigger
+            try
+            {
+                var zoneStream = installerPath + ":Zone.Identifier";
+                if (File.Exists(zoneStream))
+                {
+                    File.Delete(zoneStream);
+                }
+            }
+            catch
+            {
+                // Best-effort: ignore if filesystem doesn't support alternate data streams
+            }
+
             var psi = new ProcessStartInfo
             {
                 FileName = installerPath,

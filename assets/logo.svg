@@ -1,239 +1,205 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- Background squircle gradient (Crisp, modern, luminous) -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Background Card: Clean bright vibrant rounded container with soft glow -->
+    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="40%" stop-color="#F8FAFC" />
-      <stop offset="100%" stop-color="#EDF2F7" />
+      <stop offset="100%" stop-color="#F1F5F9" />
     </linearGradient>
 
-    <!-- Meta Blue Gradient (Vibrant electric royal blue into cyan) -->
-    <linearGradient id="metaGradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Meta Blue Signature Gradients -->
+    <linearGradient id="metaBlueVibrant" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#00C6FF" />
-      <stop offset="35%" stop-color="#0081FB" />
-      <stop offset="100%" stop-color="#0052CC" />
+      <stop offset="40%" stop-color="#0081FB" />
+      <stop offset="100%" stop-color="#0064E0" />
     </linearGradient>
 
-    <linearGradient id="metaGradSecondary" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0052CC" />
-      <stop offset="60%" stop-color="#0081FB" />
-      <stop offset="100%" stop-color="#00E5FF" />
+    <linearGradient id="metaLoopGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0064E0" />
+      <stop offset="50%" stop-color="#0081FB" />
+      <stop offset="100%" stop-color="#00D4FF" />
     </linearGradient>
 
-    <!-- Data Flow / Transfer Glow Gradient -->
-    <linearGradient id="dataFlowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="metaToExcelBridge" x1="0%" y1="50%" x2="100%" y2="50%">
       <stop offset="0%" stop-color="#0081FB" />
-      <stop offset="50%" stop-color="#06B6D4" />
+      <stop offset="40%" stop-color="#06B6D4" />
+      <stop offset="70%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#22C55E" />
+    </linearGradient>
+
+    <!-- Excel Green Signature Gradients -->
+    <linearGradient id="excelGreenBack" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#107C41" />
+      <stop offset="100%" stop-color="#0E5C32" />
+    </linearGradient>
+
+    <linearGradient id="excelGreenFront" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#33C481" />
+      <stop offset="50%" stop-color="#21A366" />
       <stop offset="100%" stop-color="#107C41" />
     </linearGradient>
 
-    <!-- Excel Green Sheet Gradients -->
-    <linearGradient id="excelSheetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#21A366" />
-      <stop offset="60%" stop-color="#107C41" />
-      <stop offset="100%" stop-color="#0B5A2D" />
-    </linearGradient>
-
-    <linearGradient id="excelTileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="excelGreenSheet" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#22C55E" />
-      <stop offset="45%" stop-color="#15803D" />
-      <stop offset="100%" stop-color="#0F5128" />
+      <stop offset="100%" stop-color="#15803D" />
     </linearGradient>
 
-    <linearGradient id="excelHeaderGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0F5128" />
-      <stop offset="100%" stop-color="#0A3E1E" />
+    <!-- Arrow / Energy Stream -->
+    <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0081FB" />
+      <stop offset="50%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#22C55E" />
     </linearGradient>
-
-    <!-- Soft Drop Shadows -->
-    <filter id="dropShadowCard" x="-10%" y="-10%" width="125%" height="125%">
-      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#0F172A" flood-opacity="0.16" />
-    </filter>
-    <filter id="dropShadowSheet" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="4" dy="12" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.22" />
-    </filter>
-    <filter id="dropShadowTile" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="-4" dy="10" stdDeviation="12" flood-color="#052E16" flood-opacity="0.32" />
-    </filter>
-    <filter id="glowBlue" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#0081FB" flood-opacity="0.40" />
-    </filter>
   </defs>
 
   <!-- ============================================================== -->
-  <!-- 1. BASE CARD: Luminous Squircle Icon Canvas                    -->
+  <!-- 1. BASE BADGE: Clean White/Slate Modern Squircle               -->
   <!-- ============================================================== -->
-  <!-- Subtle ground shadow -->
-  <rect x="24" y="32" width="464" height="464" rx="108" fill="#0F172A" opacity="0.10" />
-  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bgGrad)" stroke="#CBD5E1" stroke-width="2" />
+  <!-- Outer Soft Shadow Ring -->
+  <rect x="22" y="26" width="468" height="468" rx="104" fill="#000000" opacity="0.10" />
+  <rect x="20" y="22" width="472" height="472" rx="104" fill="#000000" opacity="0.06" />
 
-  <!-- Ambient Light Reflection in Corner -->
-  <path d="M 24 132 C 24 72, 72 24, 132 24 L 380 24 C 200 24, 24 200, 24 380 Z" fill="#FFFFFF" opacity="0.5" />
+  <!-- Main Card Body -->
+  <rect x="20" y="20" width="472" height="472" rx="104" fill="url(#cardBg)" stroke="#CBD5E1" stroke-width="2.5" />
 
-  <!-- Subtle Meta Blue & Excel Green Ambient Glow Orbs -->
-  <circle cx="120" cy="120" r="130" fill="#0081FB" opacity="0.08" />
-  <circle cx="390" cy="390" r="140" fill="#22C55E" opacity="0.09" />
+  <!-- Subtle Colorful Corner Ambient Glows -->
+  <circle cx="100" cy="100" r="140" fill="#0081FB" opacity="0.08" />
+  <circle cx="410" cy="410" r="140" fill="#10B981" opacity="0.09" />
+  <circle cx="390" cy="120" r="120" fill="#22C55E" opacity="0.07" />
 
   <!-- ============================================================== -->
-  <!-- 2. DATA FLOW BRIDGE (Meta -> Excel)                            -->
+  <!-- 2. LEFT: Authentic Vibrant Meta Infinity Ribbon                -->
   <!-- ============================================================== -->
-  <g id="dataTransferBridge">
-    <!-- Curved Transfer Stream -->
-    <path d="M 190 256 C 225 210, 240 210, 275 256"
+  <g id="metaRibbonSection" transform="translate(10, 0)">
+    <!-- Meta Loop Back Arc (Left Loop Top & Outer) -->
+    <path d="M 175 295
+             C 125 335, 60 320, 60 256
+             C 60 190, 115 160, 165 210
+             C 195 240, 225 285, 256 285
+             C 275 285, 290 275, 305 258"
           fill="none"
-          stroke="url(#dataFlowGrad)"
-          stroke-width="8"
-          stroke-linecap="round"
-          stroke-dasharray="10 14"
-          opacity="0.85" />
-
-    <path d="M 195 285 C 230 330, 245 330, 280 285"
-          fill="none"
-          stroke="url(#dataFlowGrad)"
-          stroke-width="5"
-          stroke-linecap="round"
-          stroke-dasharray="8 12"
-          opacity="0.6" />
-
-    <!-- Pulse Dots -->
-    <circle cx="232" cy="225" r="5" fill="#00C6FF" />
-    <circle cx="250" cy="235" r="4" fill="#34D399" />
-  </g>
-
-  <!-- ============================================================== -->
-  <!-- 3. LEFT: ICONIC META INFINITY LOOP                             -->
-  <!-- ============================================================== -->
-  <g id="metaLoop">
-    <!-- Soft Meta Glow Behind -->
-    <path d="M 160 300
-             C 100 350, 45 315, 45 256
-             C 45 197, 100 162, 160 212
-             C 195 241, 220 280, 256 280
-             C 285 280, 305 255, 315 235"
-          fill="none"
-          stroke="#0081FB"
-          stroke-width="36"
-          stroke-linecap="round"
-          opacity="0.25" />
-
-    <!-- Back Ribbon of Loop (Lower crossover) -->
-    <path d="M 165 302
-             C 105 352, 48 318, 48 256
-             C 48 194, 105 160, 165 210
-             C 198 238, 222 280, 256 280
-             C 278 280, 298 268, 312 248"
-          fill="none"
-          stroke="url(#metaGradSecondary)"
-          stroke-width="32"
+          stroke="url(#metaLoopGradient)"
+          stroke-width="40"
           stroke-linecap="round"
           stroke-linejoin="round" />
 
-    <!-- Front Ribbon of Loop (Top crossover that overlaps forward) -->
-    <path d="M 130 200
-             C 180 152, 235 175, 266 226
-             C 292 268, 318 296, 352 296
-             C 392 296, 420 268, 420 230"
+    <!-- Meta Loop Front Arc (Creates the classic 3D infinity crossover) -->
+    <path d="M 140 215
+             C 185 165, 240 185, 270 230
+             C 295 268, 315 295, 345 295
+             C 385 295, 415 260, 415 220"
           fill="none"
-          stroke="url(#metaGradPrimary)"
-          stroke-width="32"
+          stroke="url(#metaBlueVibrant)"
+          stroke-width="40"
           stroke-linecap="round"
           stroke-linejoin="round"
-          opacity="0.30" />
+          opacity="0.4" />
 
-    <!-- Highlight Reflection on Meta Curve -->
-    <ellipse cx="98" cy="235" rx="16" ry="32" fill="#FFFFFF" opacity="0.3" transform="rotate(-18 98 235)" />
+    <!-- Meta Left Eye Highlight -->
+    <ellipse cx="110" cy="240" rx="20" ry="32" fill="#FFFFFF" opacity="0.2" transform="rotate(-15 110 240)" />
   </g>
 
   <!-- ============================================================== -->
-  <!-- 4. RIGHT: ICONIC MICROSOFT EXCEL SPREADSHEET & "X" BADGE       -->
+  <!-- 3. CENTER: Dynamic Energy Transformation Bridge                -->
   <!-- ============================================================== -->
-  <g id="excelSpreadsheetGroup" transform="translate(230, 115)">
-    <!-- 4A. BACK: SPREADSHEET CARD WITH CELL GRID -->
-    <!-- Sheet drop shadow -->
-    <rect x="54" y="24" width="186" height="236" rx="20" fill="#0F172A" opacity="0.18" />
+  <g id="transformationArrow">
+    <!-- Fluid flow line connecting Meta into Excel -->
+    <path d="M 220 256 L 275 256"
+          stroke="url(#arrowGrad)"
+          stroke-width="12"
+          stroke-linecap="round"
+          stroke-dasharray="1 18" />
 
-    <!-- Main Green Spreadsheet Canvas -->
-    <rect x="50" y="18" width="186" height="236" rx="20" fill="url(#excelSheetGrad)" stroke="#15803D" stroke-width="2.5" />
+    <!-- Dynamic Flow Arrow Chevron -->
+    <path d="M 248 238 L 268 256 L 248 274"
+          fill="none"
+          stroke="#0081FB"
+          stroke-width="8"
+          stroke-linecap="round"
+          stroke-linejoin="round" />
 
-    <!-- Sheet Header Bar (Dark Forest Green) -->
-    <path d="M 50 38 C 50 27, 59 18, 70 18 L 216 18 C 227 18, 236 27, 236 38 L 236 64 L 50 64 Z" fill="url(#excelHeaderGrad)" />
+    <path d="M 264 238 L 284 256 L 264 274"
+          fill="none"
+          stroke="#10B981"
+          stroke-width="8"
+          stroke-linecap="round"
+          stroke-linejoin="round" />
+  </g>
 
-    <!-- Sheet Header Column Headers ("A", "B", "C") -->
-    <rect x="70" y="34" width="28" height="14" rx="3" fill="#FFFFFF" opacity="0.4" />
-    <rect x="122" y="34" width="38" height="14" rx="3" fill="#FFFFFF" opacity="0.4" />
-    <rect x="180" y="34" width="38" height="14" rx="3" fill="#FFFFFF" opacity="0.4" />
+  <!-- ============================================================== -->
+  <!-- 4. RIGHT: Authentic Microsoft Excel Icon & Spreadsheet Sheet   -->
+  <!-- ============================================================== -->
+  <g id="excelSection" transform="translate(245, 130)">
+    <!-- Back Spreadsheet Sheet with Grid (Layer 1) -->
+    <rect x="44" y="24" width="180" height="210" rx="16" fill="#000000" opacity="0.12" />
+    <rect x="40" y="20" width="180" height="210" rx="16" fill="url(#excelGreenSheet)" stroke="#15803D" stroke-width="2" />
 
-    <!-- Vertical Grid Divider Lines -->
-    <line x1="112" y1="18" x2="112" y2="254" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.30" />
-    <line x1="172" y1="18" x2="172" y2="254" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.30" />
+    <!-- Sheet Header Bar (Darker Excel Green) -->
+    <path d="M 40 36 C 40 27, 47 20, 56 20 L 204 20 C 213 20, 220 27, 220 36 L 220 62 L 40 62 Z" fill="#0E5C32" />
 
-    <!-- Horizontal Row Divider Lines -->
-    <line x1="50" y1="64" x2="236" y2="64" stroke="#FFFFFF" stroke-width="2.5" stroke-opacity="0.45" />
-    <line x1="50" y1="112" x2="236" y2="112" stroke="#FFFFFF" stroke-width="1.8" stroke-opacity="0.25" />
-    <line x1="50" y1="158" x2="236" y2="158" stroke="#FFFFFF" stroke-width="1.8" stroke-opacity="0.25" />
-    <line x1="50" y1="206" x2="236" y2="206" stroke="#FFFFFF" stroke-width="1.8" stroke-opacity="0.25" />
+    <!-- Grid Columns & Rows -->
+    <!-- Column 1 -->
+    <line x1="100" y1="20" x2="100" y2="230" stroke="#FFFFFF" stroke-width="1.8" stroke-opacity="0.35" />
+    <!-- Column 2 -->
+    <line x1="160" y1="20" x2="160" y2="230" stroke="#FFFFFF" stroke-width="1.8" stroke-opacity="0.35" />
 
-    <!-- SpreadSheet Data Rows / Numbers (Crisp Pill Cells) -->
-    <!-- Row 1 -->
-    <rect x="122" y="80" width="40" height="16" rx="4" fill="#FFFFFF" opacity="0.85" />
-    <rect x="182" y="80" width="42" height="16" rx="4" fill="#86EFAC" opacity="0.95" />
+    <!-- Row Dividers -->
+    <line x1="40" y1="62" x2="220" y2="62" stroke="#FFFFFF" stroke-width="2.2" stroke-opacity="0.5" />
+    <line x1="40" y1="104" x2="220" y2="104" stroke="#FFFFFF" stroke-width="1.5" stroke-opacity="0.25" />
+    <line x1="40" y1="146" x2="220" y2="146" stroke="#FFFFFF" stroke-width="1.5" stroke-opacity="0.25" />
+    <line x1="40" y1="188" x2="220" y2="188" stroke="#FFFFFF" stroke-width="1.5" stroke-opacity="0.25" />
 
-    <!-- Row 2 -->
-    <rect x="122" y="126" width="36" height="16" rx="4" fill="#FFFFFF" opacity="0.75" />
-    <rect x="182" y="126" width="42" height="16" rx="4" fill="#FFFFFF" opacity="0.90" />
+    <!-- Simulated Data Cells inside Excel sheet -->
+    <rect x="110" y="76" width="38" height="14" rx="4" fill="#FFFFFF" opacity="0.8" />
+    <rect x="170" y="76" width="38" height="14" rx="4" fill="#6EE7B7" opacity="0.95" />
 
-    <!-- Row 3 -->
-    <rect x="122" y="172" width="42" height="16" rx="4" fill="#86EFAC" opacity="0.95" />
-    <rect x="182" y="172" width="36" height="16" rx="4" fill="#FFFFFF" opacity="0.75" />
+    <rect x="110" y="118" width="38" height="14" rx="4" fill="#FFFFFF" opacity="0.7" />
+    <rect x="170" y="118" width="38" height="14" rx="4" fill="#FFFFFF" opacity="0.9" />
 
-    <!-- Row 4 -->
-    <rect x="122" y="218" width="38" height="16" rx="4" fill="#FFFFFF" opacity="0.85" />
-    <rect x="182" y="218" width="42" height="16" rx="4" fill="#4ADE80" opacity="1.0" />
+    <rect x="110" y="160" width="38" height="14" rx="4" fill="#6EE7B7" opacity="0.95" />
+    <rect x="170" y="160" width="38" height="14" rx="4" fill="#FFFFFF" opacity="0.7" />
 
-    <!-- 4B. FRONT: EMBOSSED 3D MICROSOFT EXCEL "X" TILE -->
-    <!-- Tile shadow -->
-    <rect x="6" y="66" width="128" height="136" rx="24" fill="#052E16" opacity="0.32" />
-    <rect x="10" y="70" width="124" height="132" rx="22" fill="#052E16" opacity="0.20" />
+    <rect x="110" y="200" width="38" height="14" rx="4" fill="#FFFFFF" opacity="0.8" />
+    <rect x="170" y="200" width="38" height="14" rx="4" fill="#34D399" opacity="1.0" />
 
-    <!-- Tile body (Vibrant Emerald) -->
-    <rect x="8" y="60" width="126" height="134" rx="24" fill="url(#excelTileGrad)" stroke="#4ADE80" stroke-width="2.5" />
+    <!-- ============================================================ -->
+    <!-- Front Embossed Excel "X" Tile (Layer 2)                      -->
+    <!-- ============================================================ -->
+    <rect x="6" y="58" width="118" height="124" rx="20" fill="#000000" opacity="0.18" />
+    <rect x="4" y="54" width="118" height="124" rx="20" fill="url(#excelGreenFront)" stroke="#22C55E" stroke-width="2" />
 
-    <!-- Top Gloss Glare on Tile -->
-    <path d="M 8 82 C 8 70, 18 60, 30 60 L 112 60 C 124 60, 134 70, 134 82 L 134 116 L 8 116 Z" fill="#FFFFFF" opacity="0.18" />
+    <!-- Tile Top Bevel / Gloss Highlight -->
+    <path d="M 4 74 C 4 63, 13 54, 24 54 L 102 54 C 113 54, 122 63, 122 74 L 122 108 L 4 108 Z" fill="#FFFFFF" opacity="0.15" />
 
     <!-- Crisp White Microsoft Excel "X" -->
-    <g id="excelLetterX">
-      <path d="M 42 86
-               L 59 86
-               L 72 109
-               L 85 86
-               L 102 86
-               L 83 127
-               L 103 170
-               L 86 170
-               L 72 143
-               L 57 170
-               L 40 170
-               L 61 127
-               Z"
-            fill="#FFFFFF" />
-      <!-- Subtle inner bevel on X for 3D depth -->
-      <path d="M 42 86 L 59 86 L 72 109 L 61 127 Z" fill="#FFFFFF" opacity="0.85" />
-    </g>
+    <path d="M 36 78
+             L 51 78
+             L 63 99
+             L 75 78
+             L 90 78
+             L 73 115
+             L 91 154
+             L 76 154
+             L 63 129
+             L 49 154
+             L 34 154
+             L 53 115
+             Z"
+          fill="#FFFFFF" />
   </g>
 
   <!-- ============================================================== -->
-  <!-- 5. VIBRANT ACCENT HIGHLIGHTS & SPARKLES                         -->
+  <!-- 5. POLISH & SPARKLES                                            -->
   <!-- ============================================================== -->
-  <!-- Electric Cyan Sparkle (Top Left / Meta side) -->
-  <path d="M 96 90 Q 96 106 112 106 Q 96 106 96 122 Q 96 106 80 106 Q 96 106 96 90 Z" fill="#0081FB" />
-  <circle cx="96" cy="106" r="3.5" fill="#FFFFFF" />
+  <!-- Top Left Meta Sparkle (Electric Cyan) -->
+  <path d="M 85 95 Q 85 108 98 108 Q 85 108 85 121 Q 85 108 72 108 Q 85 108 85 95 Z" fill="#0081FB" />
+  <circle cx="85" cy="108" r="3" fill="#FFFFFF" />
 
-  <!-- Emerald Mint Sparkle (Top Right / Excel side) -->
-  <path d="M 436 86 Q 436 102 452 102 Q 436 102 436 118 Q 436 102 420 102 Q 436 102 436 86 Z" fill="#10B981" />
-  <circle cx="436" cy="102" r="3.5" fill="#FFFFFF" />
+  <!-- Top Right Excel Sparkle (Emerald Mint) -->
+  <path d="M 435 90 Q 435 103 448 103 Q 435 103 435 116 Q 435 103 422 103 Q 435 103 435 90 Z" fill="#10B981" />
+  <circle cx="435" cy="103" r="3" fill="#FFFFFF" />
 
-  <!-- Gold Success Star (Bottom / Completed Ledger) -->
-  <path d="M 256 446 Q 256 455 265 455 Q 256 455 256 464 Q 256 455 247 455 Q 256 455 256 446 Z" fill="#F59E0B" />
-  <circle cx="256" cy="455" r="2.5" fill="#FFFFFF" />
+  <!-- Bottom Accent Dot -->
+  <circle cx="256" cy="455" r="4" fill="#0081FB" opacity="0.4" />
+  <circle cx="242" cy="455" r="3" fill="#06B6D4" opacity="0.4" />
+  <circle cx="270" cy="455" r="3" fill="#10B981" opacity="0.4" />
 </svg>

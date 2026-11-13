@@ -2,7 +2,7 @@
 ; Compile with ISCC.exe after: dotnet build -c Release
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.15"
+  #define MyAppVersion "1.0.16"
 #endif
 
 #define MyAppName "Meta Receipts Lite"
@@ -17,6 +17,16 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+AppPublisherURL=https://github.com/mahimapaseda/Meta2Excel
+AppSupportURL=https://github.com/mahimapaseda/Meta2Excel/issues
+AppUpdatesURL=https://github.com/mahimapaseda/Meta2Excel/releases
+VersionInfoVersion={#MyAppVersion}
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription={#MyAppName} Setup Installer
+VersionInfoTextVersion={#MyAppVersion}
+VersionInfoCopyright=Copyright (C) 2026 {#MyAppPublisher}
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
 DefaultDirName={localappdata}\Programs\MetaReceiptsLite
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes

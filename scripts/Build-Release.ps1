@@ -11,7 +11,7 @@
   signs Setup.exe and MetaReceiptsLite.exe when signtool is available.
 #>
 param(
-    [string]$Version = "1.0.15",
+    [string]$Version = "1.0.16",
     [string]$SignThumbprint = $env:MRL_SIGN_THUMBPRINT
 )
 
@@ -97,6 +97,16 @@ function Find-SignTool {
     return $null
 }
 
+if ([string]::IsNullOrWhiteSpace($SignThumbprint)) {
+    $autoCert = Get-ChildItem "Cert:\CurrentUser\My" -CodeSigningCert -ErrorAction SilentlyContinue |
+        Where-Object { $_.Subject -match "Meta Receipts Lite" } |
+        Select-Object -First 1
+    if ($autoCert) {
+        $SignThumbprint = $autoCert.Thumbprint
+        Write-Host "==> Auto-detected Code Signing Certificate: $($autoCert.Subject) ($SignThumbprint)" -ForegroundColor Green
+    }
+}
+
 if (-not [string]::IsNullOrWhiteSpace($SignThumbprint)) {
     $signtool = Find-SignTool
     if (-not $signtool) {
@@ -105,8 +115,12 @@ if (-not [string]::IsNullOrWhiteSpace($SignThumbprint)) {
     else {
         Write-Host "==> Signing with thumbprint $SignThumbprint" -ForegroundColor Cyan
         foreach ($f in @($setupPath, $exePath, $exeCopy)) {
-            & $signtool sign /sha1 $SignThumbprint /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $f
-            if ($LASTEXITCODE -ne 0) { throw "signtool failed for $f" }
+            & $signtool sign /sha1 $SignThumbprint /fd SHA256 /d "Meta Receipts Lite" /du "https://github.com/mahimapaseda/Meta2Excel" /tr http://timestamp.digicert.com /td SHA256 $f
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Timestamping failed or timed out for $f; signing without timestamp..."
+                & $signtool sign /sha1 $SignThumbprint /fd SHA256 /d "Meta Receipts Lite" /du "https://github.com/mahimapaseda/Meta2Excel" $f
+                if ($LASTEXITCODE -ne 0) { throw "signtool failed for $f" }
+            }
         }
         # Re-zip after signing the release-dir exe so portable ZIP contains signed binary
         if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
