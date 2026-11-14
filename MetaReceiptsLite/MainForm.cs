@@ -33,7 +33,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.1.3");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.2.0");
 
         private Panel _header;
         private Label _brandTitle;
@@ -73,12 +73,12 @@ namespace MetaReceiptsLite
         {
             Text = "Meta Receipts Lite";
             _theme = LoadTheme();
-            Width = 1180;
-            Height = 760;
-            MinimumSize = new Size(900, 600);
+            Width = 1200;
+            Height = 780;
+            MinimumSize = new Size(950, 640);
             StartPosition = FormStartPosition.CenterScreen;
             AutoScaleMode = AutoScaleMode.Dpi;
-            Font = SystemFonts.MessageBoxFont;
+            Font = new Font("Segoe UI", 9.25f, FontStyle.Regular);
             BackColor = _theme.Canvas;
             AllowDrop = true;
             DoubleBuffered = true;
@@ -131,7 +131,7 @@ namespace MetaReceiptsLite
                 AutoSize = true,
                 Text = "Meta Receipts Lite",
                 ForeColor = ColorNavy,
-                Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 16f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 16f, FontStyle.Bold),
                 Location = new Point(18, 10),
                 BackColor = Color.Transparent
             };
@@ -140,7 +140,8 @@ namespace MetaReceiptsLite
                 AutoSize = true,
                 Text = "Turn Meta Ads receipt PDFs into a clean Excel or CSV ledger  ·  v" + _currentVersion,
                 ForeColor = ColorMuted,
-                Location = new Point(20, 40),
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                Location = new Point(20, 42),
                 BackColor = Color.Transparent
             };
 
@@ -297,7 +298,7 @@ namespace MetaReceiptsLite
             {
                 AutoSize = true,
                 Text = "Start with your Meta receipt PDFs",
-                Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 13f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
                 ForeColor = ColorNavy,
                 BackColor = Color.Transparent
             };
@@ -305,6 +306,7 @@ namespace MetaReceiptsLite
             {
                 AutoSize = true,
                 Text = "Drag files or folders into this window, or browse. Your PDFs stay on this PC.",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 ForeColor = ColorMuted,
                 BackColor = Color.Transparent
             };
@@ -388,11 +390,11 @@ namespace MetaReceiptsLite
                     grid.DefaultCellStyle.BackColor = _theme.Surface;
                     grid.DefaultCellStyle.ForeColor = _theme.Text;
                     grid.DefaultCellStyle.SelectionBackColor = _theme.Selection;
-                    grid.DefaultCellStyle.SelectionForeColor = _theme.Text;
+                    grid.DefaultCellStyle.SelectionForeColor = _theme.SelectionText;
                     grid.AlternatingRowsDefaultCellStyle.BackColor = _theme.Elevated;
                     grid.AlternatingRowsDefaultCellStyle.ForeColor = _theme.Text;
                     grid.AlternatingRowsDefaultCellStyle.SelectionBackColor = _theme.Selection;
-                    grid.AlternatingRowsDefaultCellStyle.SelectionForeColor = _theme.Text;
+                    grid.AlternatingRowsDefaultCellStyle.SelectionForeColor = _theme.SelectionText;
                 }
                 else if (control is Button button)
                 {
@@ -446,6 +448,12 @@ namespace MetaReceiptsLite
         private void StyleButton(Button button)
         {
             bool primary = button == _btnAdd || button == _dropBrowse || button == _btnExportExcel;
+            var themedButton = button as ThemeButton;
+            if (themedButton != null)
+            {
+                themedButton.IsPrimary = primary;
+            }
+
             if (!button.Enabled)
             {
                 button.BackColor = _theme.DisabledSurface;
@@ -454,16 +462,15 @@ namespace MetaReceiptsLite
             else
             {
                 button.BackColor = primary ? _theme.Accent : _theme.Surface;
-                button.ForeColor = primary && _theme.IsDark ? Color.FromArgb(5, 35, 23) : (primary ? Color.White : _theme.Text);
+                button.ForeColor = primary ? _theme.AccentFore : _theme.Text;
             }
-            button.FlatAppearance.BorderColor = _theme.Border;
-            button.FlatAppearance.MouseOverBackColor = _theme.Elevated;
-            var themedButton = button as ThemeButton;
+            button.FlatAppearance.BorderColor = primary ? Color.Transparent : _theme.Border;
+            button.FlatAppearance.MouseOverBackColor = primary ? _theme.AccentHover : _theme.Elevated;
             if (themedButton != null)
             {
                 themedButton.DisabledTextColor = _theme.DisabledText;
                 themedButton.DisabledBackColor = _theme.DisabledSurface;
-                themedButton.ThemeBorderColor = _theme.Border;
+                themedButton.ThemeBorderColor = primary ? Color.Transparent : _theme.Border;
                 themedButton.Invalidate();
             }
         }
@@ -475,8 +482,8 @@ namespace MetaReceiptsLite
                 Text = text,
                 Dock = DockStyle.Top,
                 AutoSize = false,
-                Height = 24,
-                Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 9.5f, FontStyle.Bold),
+                Height = 26,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = ColorNavy,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(2, 0, 0, 0)
@@ -519,9 +526,12 @@ namespace MetaReceiptsLite
             {
                 Text = text,
                 AutoSize = true,
-                MinimumSize = new Size(primary ? 124 : 96, 34),
-                Height = 34,
+                MinimumSize = new Size(primary ? 128 : 100, 36),
+                Height = 36,
+                CornerRadius = 6,
+                IsPrimary = primary,
                 FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, primary ? FontStyle.Bold : FontStyle.Regular),
                 BackColor = back,
                 ForeColor = fore,
                 Cursor = Cursors.Hand,
@@ -564,18 +574,19 @@ namespace MetaReceiptsLite
                 {
                     BackColor = ColorElevated,
                     ForeColor = ColorMuted,
-                    Font = new Font(SystemFonts.MessageBoxFont.FontFamily, 9f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
                     SelectionBackColor = ColorElevated,
                     SelectionForeColor = ColorNavy,
-                    Padding = new Padding(4, 2, 4, 2)
+                    Padding = new Padding(6, 2, 6, 2)
                 },
-                ColumnHeadersHeight = 36,
+                ColumnHeadersHeight = 38,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = ColorPanel,
                     ForeColor = ColorNavy,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                     SelectionBackColor = Color.FromArgb(219, 234, 254),
                     SelectionForeColor = ColorNavy,
                     Padding = new Padding(8, 2, 8, 2)
@@ -584,10 +595,12 @@ namespace MetaReceiptsLite
                 {
                     BackColor = Color.FromArgb(248, 250, 252),
                     ForeColor = ColorNavy,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                     SelectionBackColor = Color.FromArgb(219, 234, 254),
-                    SelectionForeColor = ColorNavy
+                    SelectionForeColor = ColorNavy,
+                    Padding = new Padding(8, 2, 8, 2)
                 },
-                RowTemplate = { Height = 30 },
+                RowTemplate = { Height = 32 },
                 StandardTab = true,
                 TabStop = true
             };
@@ -607,11 +620,32 @@ namespace MetaReceiptsLite
         private void DropZone_Paint(object sender, PaintEventArgs e)
         {
             var rect = _dropZone.ClientRectangle;
-            rect.Inflate(-18, -18);
-            using (var pen = new Pen(_dragHighlight ? ColorExcel : Color.FromArgb(203, 213, 225), _dragHighlight ? 2.5f : 1.5f))
+            rect.Inflate(-24, -24);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            Color borderColor = _dragHighlight ? _theme.Accent : (_theme.IsDark ? Color.FromArgb(71, 85, 105) : Color.FromArgb(203, 213, 225));
+            float borderWidth = _dragHighlight ? 2.5f : 1.75f;
+
+            using (var path = new System.Drawing.Drawing2D.GraphicsPath())
             {
-                pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
-                e.Graphics.DrawRectangle(pen, rect);
+                int radius = 12;
+                int diameter = radius * 2;
+                var arc = new Rectangle(rect.X, rect.Y, diameter, diameter);
+                path.AddArc(arc, 180, 90);
+                arc.X = rect.Right - diameter;
+                path.AddArc(arc, 270, 90);
+                arc.Y = rect.Bottom - diameter;
+                path.AddArc(arc, 0, 90);
+                arc.X = rect.Left;
+                path.AddArc(arc, 90, 90);
+                path.CloseFigure();
+
+                using (var pen = new Pen(borderColor, borderWidth))
+                {
+                    pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    pen.DashPattern = new float[] { 5f, 3f };
+                    e.Graphics.DrawPath(pen, path);
+                }
             }
         }
 
