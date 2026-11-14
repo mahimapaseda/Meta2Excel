@@ -39,16 +39,16 @@ namespace MetaReceiptsLite.Updater
             _updateService = updateService ?? new UpdateService();
 
             Text = "Software Update Available — Meta Receipts Lite";
-            Width = 580;
-            Height = 500;
-            MinimumSize = new Size(520, 440);
+            Width = 560;
+            Height = 490;
+            MinimumSize = new Size(500, 420);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
             ShowInTaskbar = false;
             BackColor = ColorCanvas;
-            Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+            Font = SystemFonts.MessageBoxFont;
 
             BuildUi();
         }
@@ -68,7 +68,7 @@ namespace MetaReceiptsLite.Updater
             {
                 Text = "A new version of Meta Receipts Lite is available!",
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Font = new Font(Font.FontFamily, 12f, FontStyle.Bold),
                 AutoSize = true,
                 Location = new Point(16, 12)
             };
@@ -79,7 +79,7 @@ namespace MetaReceiptsLite.Updater
             {
                 Text = $"Current: v{currentStr}   ➔   New: v{newStr}",
                 ForeColor = Color.FromArgb(200, 225, 250),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Font = new Font(Font.FontFamily, 9.5f, FontStyle.Bold),
                 AutoSize = true,
                 Location = new Point(18, 38)
             };
@@ -167,51 +167,47 @@ namespace MetaReceiptsLite.Updater
                 Padding = new Padding(16, 10, 16, 10)
             };
 
-            _btnSettings = new ThemeButton
+            _btnSettings = new Button
             {
                 Text = "Settings...",
                 Width = 110,
-                Height = 34,
-                CornerRadius = 6,
+                Height = 32,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(60, 70, 80),
                 Cursor = Cursors.Hand,
-                Location = new Point(16, 9),
+                Location = new Point(16, 10),
                 Anchor = AnchorStyles.Left | AnchorStyles.Bottom
             };
             _btnSettings.FlatAppearance.BorderColor = Color.FromArgb(200, 210, 220);
             _btnSettings.Click += (s, e) => ShowSettingsDialog();
 
-            _btnAction = new ThemeButton
+            _btnAction = new Button
             {
-                Text = "Download Update",
-                Width = 155,
-                Height = 34,
-                CornerRadius = 6,
-                IsPrimary = true,
+                Text = "Update Now",
+                Width = 125,
+                Height = 32,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = ColorExcel,
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font(Font.FontFamily, 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Location = new Point(390, 9),
+                Location = new Point(400, 10),
                 Anchor = AnchorStyles.Right | AnchorStyles.Bottom
             };
             _btnAction.FlatAppearance.BorderSize = 0;
             _btnAction.Click += async (s, e) => await HandleActionClickAsync();
 
-            _btnCancel = new ThemeButton
+            _btnCancel = new Button
             {
-                Text = "Close",
+                Text = "Later",
                 Width = 90,
-                Height = 34,
-                CornerRadius = 6,
+                Height = 32,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(60, 70, 80),
                 Cursor = Cursors.Hand,
-                Location = new Point(290, 9),
+                Location = new Point(300, 10),
                 Anchor = AnchorStyles.Right | AnchorStyles.Bottom
             };
             _btnCancel.FlatAppearance.BorderColor = Color.FromArgb(200, 210, 220);

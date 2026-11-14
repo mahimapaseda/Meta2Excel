@@ -16,16 +16,13 @@ namespace MetaReceiptsLite
     {
         private const int PreviewRowCap = 5000;
 
-        // Ledger Light tokens from docs/DESIGN_SYSTEM.md. Solid fills keep rendering inexpensive.
-        private static readonly Color ColorNavy = Color.FromArgb(15, 23, 42);       // #0F172A
-        private static readonly Color ColorExcel = Color.FromArgb(21, 128, 61);    // #15803D
-        private static readonly Color ColorCanvas = Color.FromArgb(248, 250, 252); // #F8FAFC
+        // Brand palette (matches Excel export header; cheap solid fills for old GPUs)
+        private static readonly Color ColorNavy = Color.FromArgb(31, 78, 120);      // #1F4E78
+        private static readonly Color ColorExcel = Color.FromArgb(33, 115, 70);     // #217346
+        private static readonly Color ColorCanvas = Color.FromArgb(245, 247, 250);  // #F5F7FA
         private static readonly Color ColorPanel = Color.White;
-        private static readonly Color ColorBorder = Color.FromArgb(226, 232, 240); // #E2E8F0
-        private static readonly Color ColorMuted = Color.FromArgb(71, 85, 105);    // #475569
-        private static readonly Color ColorElevated = Color.FromArgb(241, 245, 249); // #F1F5F9
-        private readonly string _themePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MetaReceiptsLite", "theme.txt");
-        private ThemePalette _theme;
+        private static readonly Color ColorBorder = Color.FromArgb(210, 218, 226);
+        private static readonly Color ColorMuted = Color.FromArgb(90, 105, 120);
 
         private readonly List<Receipt> _receipts = new List<Receipt>();
         private readonly List<LineItem> _items = new List<LineItem>();
@@ -33,7 +30,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.2.1");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.3.0");
 
         private Panel _header;
         private Label _brandTitle;
@@ -46,7 +43,6 @@ namespace MetaReceiptsLite
         private Button _btnCancel;
         private Button _btnRemove;
         private Button _btnUpdate;
-        private Button _btnTheme;
         private ContextMenuStrip _csvMenu;
 
         private Panel _content;
@@ -71,15 +67,14 @@ namespace MetaReceiptsLite
 
         public MainForm()
         {
-            Text = "Meta Receipts Lite";
-            _theme = LoadTheme();
-            Width = 1200;
-            Height = 780;
-            MinimumSize = new Size(950, 640);
+            Text = "Meta Receipts -> Excel";
+            Width = 1120;
+            Height = 720;
+            MinimumSize = new Size(900, 560);
             StartPosition = FormStartPosition.CenterScreen;
             AutoScaleMode = AutoScaleMode.Dpi;
-            Font = new Font("Segoe UI", 9.25f, FontStyle.Regular);
-            BackColor = _theme.Canvas;
+            Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+            BackColor = ColorCanvas;
             AllowDrop = true;
             DoubleBuffered = true;
 
@@ -100,7 +95,6 @@ namespace MetaReceiptsLite
             UpdateStatus();
             SetBusy(false);
             UpdateEmptyState();
-            ApplyTheme(this);
         }
 
         private void BuildUi()
@@ -121,48 +115,47 @@ namespace MetaReceiptsLite
             _header = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 112,
-                BackColor = ColorPanel,
-                Padding = new Padding(18, 10, 18, 8)
+                Height = 88,
+                BackColor = ColorNavy,
+                Padding = new Padding(16, 10, 16, 10)
             };
 
             _brandTitle = new Label
             {
                 AutoSize = true,
-                Text = "Meta Receipts Lite",
-                ForeColor = ColorNavy,
-                Font = new Font("Segoe UI", 16f, FontStyle.Bold),
-                Location = new Point(18, 10),
+                Text = "Meta Receipts -> Excel",
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 15f, FontStyle.Bold),
+                Location = new Point(16, 10),
                 BackColor = Color.Transparent
             };
             _brandSub = new Label
             {
                 AutoSize = true,
-                Text = "Turn Meta Ads receipt PDFs into a clean Excel or CSV ledger  ·  v" + _currentVersion,
-                ForeColor = ColorMuted,
+                Text = "Convert Meta Ads receipt PDFs into Excel or CSV • v" + _currentVersion,
+                ForeColor = Color.FromArgb(195, 215, 235),
                 Font = new Font("Segoe UI", 9f, FontStyle.Regular),
-                Location = new Point(20, 42),
+                Location = new Point(18, 38),
                 BackColor = Color.Transparent
             };
 
             _actions = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 48,
+                Height = 36,
                 FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = true,
-                Padding = new Padding(0, 4, 0, 2),
-                BackColor = ColorPanel
+                WrapContents = false,
+                Padding = new Padding(8, 3, 8, 3),
+                BackColor = Color.FromArgb(24, 62, 96)
             };
 
-            _btnAdd = MakeButton("&Add PDFs...", ColorExcel, Color.White, true);
-            _btnExportExcel = MakeButton("Export E&xcel...", ColorNavy, Color.White, true);
-            _btnExportCsv = MakeButton("Export C&SV  ▾", ColorPanel, ColorNavy, false);
-            _btnClear = MakeButton("C&lear", ColorPanel, ColorMuted, false);
-            _btnCancel = MakeButton("Ca&ncel", Color.FromArgb(190, 18, 60), Color.White, false);
-            _btnRemove = MakeButton("&Remove selected", ColorPanel, ColorMuted, false);
-            _btnUpdate = MakeButton("Check for &updates", ColorPanel, ColorMuted, false);
-            _btnTheme = MakeButton("Dark mode", ColorPanel, ColorMuted, false);
+            _btnAdd = MakeButton("Add PDFs...", ColorExcel, Color.White, true);
+            _btnExportExcel = MakeButton("Export Excel...", Color.FromArgb(46, 100, 150), Color.White, true);
+            _btnExportCsv = MakeButton("Export CSV ▾", Color.FromArgb(46, 100, 150), Color.White, true);
+            _btnClear = MakeButton("Clear", Color.FromArgb(70, 90, 110), Color.White, false);
+            _btnCancel = MakeButton("Cancel", Color.FromArgb(170, 60, 60), Color.White, false);
+            _btnRemove = MakeButton("Remove selected", Color.FromArgb(70, 90, 110), Color.White, false);
+            _btnUpdate = MakeButton("Check for Updates", Color.FromArgb(50, 75, 100), Color.White, false);
 
             _csvMenu = new ContextMenuStrip();
             _csvMenu.Items.Add("Line items...", null, (s, e) => ExportCsv(CsvMode.LineItems));
@@ -177,7 +170,6 @@ namespace MetaReceiptsLite
             _actions.Controls.Add(_btnCancel);
             _actions.Controls.Add(_btnRemove);
             _actions.Controls.Add(_btnUpdate);
-            _actions.Controls.Add(_btnTheme);
 
             _header.Controls.Add(_actions);
             _header.Controls.Add(_brandTitle);
@@ -297,25 +289,21 @@ namespace MetaReceiptsLite
             _dropTitle = new Label
             {
                 AutoSize = true,
-                Text = "Start with your Meta receipt PDFs",
-                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+                Text = "Drop Meta receipt PDFs here",
+                Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
                 ForeColor = ColorNavy,
                 BackColor = Color.Transparent
             };
             _dropHint = new Label
             {
                 AutoSize = true,
-                Text = "Drag files or folders into this window, or browse. Your PDFs stay on this PC.",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                Text = "or click Browse to select files / folders — processing stays off the UI thread",
+                Font = new Font("Segoe UI", 9.25f, FontStyle.Regular),
                 ForeColor = ColorMuted,
                 BackColor = Color.Transparent
             };
             _dropBrowse = MakeButton("Browse PDFs...", ColorExcel, Color.White, true);
             _dropBrowse.Width = 140;
-            _dropZone.AccessibleName = "Add Meta receipt PDF files";
-            _dropZone.AccessibleDescription = "Drop PDF files or folders here, or browse to select them. Files are processed locally.";
-            _filterCampaign.AccessibleName = "Filter line items";
-            _filterCampaign.AccessibleDescription = "Filter by branch, campaign, or ad set.";
 
             _dropZone.Controls.Add(_dropTitle);
             _dropZone.Controls.Add(_dropHint);
@@ -341,10 +329,9 @@ namespace MetaReceiptsLite
         {
             _status = new StatusStrip
             {
-                BackColor = ColorCanvas,
+                BackColor = Color.FromArgb(236, 240, 244),
                 SizingGrip = true,
-                RenderMode = ToolStripRenderMode.System,
-                ForeColor = ColorMuted
+                RenderMode = ToolStripRenderMode.System
             };
             _statusLabel = new ToolStripStatusLabel("Ready")
             {
@@ -355,127 +342,6 @@ namespace MetaReceiptsLite
             _status.Items.Add(_statusLabel);
         }
 
-        private ThemePalette LoadTheme()
-        {
-            try { return File.Exists(_themePath) && File.ReadAllText(_themePath).Trim().Equals("dark", StringComparison.OrdinalIgnoreCase) ? ThemePalette.Dark : ThemePalette.Light; }
-            catch { return ThemePalette.Light; }
-        }
-
-        private void ToggleTheme()
-        {
-            _theme = _theme.IsDark ? ThemePalette.Light : ThemePalette.Dark;
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(_themePath));
-                File.WriteAllText(_themePath, _theme.IsDark ? "dark" : "light");
-            }
-            catch { /* Theme preference is optional; keep the in-session choice. */ }
-            ApplyTheme(this);
-        }
-
-        private void ApplyTheme(Control root)
-        {
-            root.BackColor = _theme.Canvas;
-            root.ForeColor = _theme.Text;
-            foreach (Control control in root.Controls)
-            {
-                if (control is DataGridView grid)
-                {
-                    grid.BackgroundColor = _theme.Surface;
-                    grid.GridColor = _theme.Border;
-                    grid.ColumnHeadersDefaultCellStyle.BackColor = _theme.Elevated;
-                    grid.ColumnHeadersDefaultCellStyle.ForeColor = _theme.Muted;
-                    grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = _theme.Elevated;
-                    grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = _theme.Text;
-                    grid.DefaultCellStyle.BackColor = _theme.Surface;
-                    grid.DefaultCellStyle.ForeColor = _theme.Text;
-                    grid.DefaultCellStyle.SelectionBackColor = _theme.Selection;
-                    grid.DefaultCellStyle.SelectionForeColor = _theme.SelectionText;
-                    grid.AlternatingRowsDefaultCellStyle.BackColor = _theme.Elevated;
-                    grid.AlternatingRowsDefaultCellStyle.ForeColor = _theme.Text;
-                    grid.AlternatingRowsDefaultCellStyle.SelectionBackColor = _theme.Selection;
-                    grid.AlternatingRowsDefaultCellStyle.SelectionForeColor = _theme.SelectionText;
-                }
-                else if (control is Button button)
-                {
-                    StyleButton(button);
-                    button.EnabledChanged -= ThemeButton_EnabledChanged;
-                    button.EnabledChanged += ThemeButton_EnabledChanged;
-                }
-                else if (control is TextBox textBox)
-                {
-                    textBox.BackColor = _theme.Surface;
-                    textBox.ForeColor = _theme.Text;
-                }
-                else if (control == _header)
-                {
-                    ApplyTheme(control);
-                    control.BackColor = _theme.Surface;
-                }
-                else if (control == _dropZone)
-                {
-                    ApplyTheme(control);
-                    control.BackColor = _theme.Surface;
-                }
-                else
-                {
-                    control.BackColor = _theme.Canvas;
-                    control.ForeColor = _theme.Text;
-                    ApplyTheme(control);
-                }
-            }
-
-            _brandTitle.ForeColor = _theme.Text;
-            _brandSub.ForeColor = _theme.Muted;
-            _lblReceipts.ForeColor = _theme.Text;
-            _lblItems.ForeColor = _theme.Text;
-            _lblFilter.ForeColor = _theme.Muted;
-            _dropTitle.ForeColor = _theme.Text;
-            _dropHint.ForeColor = _theme.Muted;
-            _status.BackColor = _theme.Canvas;
-            _statusLabel.ForeColor = _theme.Muted;
-            _btnTheme.Text = _theme.IsDark ? "Light mode" : "Dark mode";
-            _btnTheme.AccessibleName = _theme.IsDark ? "Switch to light mode" : "Switch to dark mode";
-            _dropZone.Invalidate();
-        }
-
-        private void ThemeButton_EnabledChanged(object sender, EventArgs e)
-        {
-            var button = sender as Button;
-            if (button != null) StyleButton(button);
-        }
-
-        private void StyleButton(Button button)
-        {
-            bool primary = button == _btnAdd || button == _dropBrowse || button == _btnExportExcel;
-            var themedButton = button as ThemeButton;
-            if (themedButton != null)
-            {
-                themedButton.IsPrimary = primary;
-            }
-
-            if (!button.Enabled)
-            {
-                button.BackColor = _theme.DisabledSurface;
-                button.ForeColor = _theme.DisabledText;
-            }
-            else
-            {
-                button.BackColor = primary ? _theme.Accent : _theme.Surface;
-                button.ForeColor = primary ? _theme.AccentFore : _theme.Text;
-            }
-            button.FlatAppearance.BorderColor = _theme.Border;
-            button.FlatAppearance.BorderSize = primary ? 0 : 1;
-            button.FlatAppearance.MouseOverBackColor = primary ? _theme.AccentHover : _theme.Elevated;
-            if (themedButton != null)
-            {
-                themedButton.DisabledTextColor = _theme.DisabledText;
-                themedButton.DisabledBackColor = _theme.DisabledSurface;
-                themedButton.ThemeBorderColor = primary ? Color.Transparent : _theme.Border;
-                themedButton.Invalidate();
-            }
-        }
-
         private static Label SectionLabel(string text)
         {
             return new Label
@@ -483,8 +349,8 @@ namespace MetaReceiptsLite
                 Text = text,
                 Dock = DockStyle.Top,
                 AutoSize = false,
-                Height = 26,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Height = 24,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = ColorNavy,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(2, 0, 0, 0)
@@ -523,28 +389,23 @@ namespace MetaReceiptsLite
 
         private static Button MakeButton(string text, Color back, Color fore, bool primary)
         {
-            var b = new ThemeButton
+            var b = new Button
             {
                 Text = text,
                 AutoSize = true,
-                MinimumSize = new Size(primary ? 128 : 100, 36),
-                Height = 36,
-                CornerRadius = 6,
-                IsPrimary = primary,
+                MinimumSize = new Size(primary ? 112 : 92, 30),
+                Height = 30,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f, primary ? FontStyle.Bold : FontStyle.Regular),
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                 BackColor = back,
                 ForeColor = fore,
                 Cursor = Cursors.Hand,
-                Margin = new Padding(0, 2, 8, 2),
+                Margin = new Padding(0, 0, 8, 0),
                 UseVisualStyleBackColor = false
             };
-            b.FlatAppearance.BorderSize = primary ? 0 : 1;
-            b.FlatAppearance.BorderColor = ColorBorder;
-            b.FlatAppearance.MouseOverBackColor = primary ? ControlPaint.Light(back, 0.12f) : ColorElevated;
-            b.FlatAppearance.MouseDownBackColor = primary ? ControlPaint.Dark(back, 0.08f) : Color.FromArgb(226, 232, 240);
-            b.AccessibleRole = AccessibleRole.PushButton;
-            b.TabStop = true;
+            b.FlatAppearance.BorderSize = 0;
+            b.FlatAppearance.MouseOverBackColor = ControlPaint.Light(back, 0.12f);
+            b.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(back, 0.08f);
             return b;
         }
 
@@ -573,37 +434,35 @@ namespace MetaReceiptsLite
                 EnableHeadersVisualStyles = false,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = ColorElevated,
-                    ForeColor = ColorMuted,
+                    BackColor = ColorNavy,
+                    ForeColor = Color.White,
                     Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
-                    SelectionBackColor = ColorElevated,
-                    SelectionForeColor = ColorNavy,
+                    SelectionBackColor = ColorNavy,
+                    SelectionForeColor = Color.White,
                     Padding = new Padding(6, 2, 6, 2)
                 },
-                ColumnHeadersHeight = 38,
+                ColumnHeadersHeight = 30,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = ColorPanel,
-                    ForeColor = ColorNavy,
+                    ForeColor = Color.FromArgb(30, 40, 50),
                     Font = new Font("Segoe UI", 9f, FontStyle.Regular),
-                    SelectionBackColor = Color.FromArgb(219, 234, 254),
-                    SelectionForeColor = ColorNavy,
-                    Padding = new Padding(8, 2, 8, 2)
+                    SelectionBackColor = Color.FromArgb(210, 228, 242),
+                    SelectionForeColor = Color.FromArgb(20, 40, 60),
+                    Padding = new Padding(6, 2, 6, 2)
                 },
                 AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Color.FromArgb(248, 250, 252),
-                    ForeColor = ColorNavy,
+                    ForeColor = Color.FromArgb(30, 40, 50),
                     Font = new Font("Segoe UI", 9f, FontStyle.Regular),
-                    SelectionBackColor = Color.FromArgb(219, 234, 254),
-                    SelectionForeColor = ColorNavy,
-                    Padding = new Padding(8, 2, 8, 2)
+                    SelectionBackColor = Color.FromArgb(210, 228, 242),
+                    SelectionForeColor = Color.FromArgb(20, 40, 60),
+                    Padding = new Padding(6, 2, 6, 2)
                 },
-                RowTemplate = { Height = 32 },
-                StandardTab = true,
-                TabStop = true
+                RowTemplate = { Height = 28 }
             };
             return g;
         }
@@ -621,15 +480,15 @@ namespace MetaReceiptsLite
         private void DropZone_Paint(object sender, PaintEventArgs e)
         {
             var rect = _dropZone.ClientRectangle;
-            rect.Inflate(-24, -24);
+            rect.Inflate(-20, -20);
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            Color borderColor = _dragHighlight ? _theme.Accent : (_theme.IsDark ? Color.FromArgb(71, 85, 105) : Color.FromArgb(203, 213, 225));
+            Color borderColor = _dragHighlight ? ColorExcel : ColorBorder;
             float borderWidth = _dragHighlight ? 2.5f : 1.75f;
 
             using (var path = new System.Drawing.Drawing2D.GraphicsPath())
             {
-                int radius = 12;
+                int radius = 10;
                 int diameter = radius * 2;
                 var arc = new Rectangle(rect.X, rect.Y, diameter, diameter);
                 path.AddArc(arc, 180, 90);
@@ -666,7 +525,6 @@ namespace MetaReceiptsLite
             };
             _btnRemove.Click += (s, e) => RemoveSelectedReceipts();
             _btnUpdate.Click += async (s, e) => await CheckForUpdatesAsync(manual: true);
-            _btnTheme.Click += (s, e) => ToggleTheme();
             _filterCampaign.TextChanged += (s, e) => RefreshItemGrid();
         }
 
