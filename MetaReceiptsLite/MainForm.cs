@@ -33,7 +33,7 @@ namespace MetaReceiptsLite
 
         private readonly UpdateConfig _updateConfig = UpdateConfig.Load();
         private readonly IUpdateService _updateService = new UpdateService();
-        private readonly SemVersion _currentVersion = SemVersion.Parse("1.2.0");
+        private readonly SemVersion _currentVersion = SemVersion.Parse("1.2.1");
 
         private Panel _header;
         private Label _brandTitle;
@@ -464,7 +464,8 @@ namespace MetaReceiptsLite
                 button.BackColor = primary ? _theme.Accent : _theme.Surface;
                 button.ForeColor = primary ? _theme.AccentFore : _theme.Text;
             }
-            button.FlatAppearance.BorderColor = primary ? Color.Transparent : _theme.Border;
+            button.FlatAppearance.BorderColor = _theme.Border;
+            button.FlatAppearance.BorderSize = primary ? 0 : 1;
             button.FlatAppearance.MouseOverBackColor = primary ? _theme.AccentHover : _theme.Elevated;
             if (themedButton != null)
             {
