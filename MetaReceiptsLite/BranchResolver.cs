@@ -14,6 +14,10 @@ namespace MetaReceiptsLite
             @"^\s*([A-Za-z]+)",
             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+        private static readonly Regex RxEngagementPrefix = new Regex(
+            @"^\s*engagement\b(?:\s+ad\s+set)?(?:\s+\d+)?(?:\s*-\s*|\s+)?(.*)$",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         // Any spelling → full branch name (short codes + longer variants)
         private static readonly Dictionary<string, string> NameByAlias =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -132,6 +136,16 @@ namespace MetaReceiptsLite
         public static string ExtractAdSetCode(string adSet)
         {
             if (string.IsNullOrWhiteSpace(adSet)) return string.Empty;
+
+            var mEng = RxEngagementPrefix.Match(adSet);
+            if (mEng.Success)
+            {
+                string rem = mEng.Groups[1].Value.TrimStart(' ', '-', '_');
+                var mWord = RxAdSetPrefix.Match(rem);
+                if (mWord.Success)
+                    return mWord.Groups[1].Value;
+            }
+
             var m = RxAdSetPrefix.Match(adSet);
             return m.Success ? m.Groups[1].Value : string.Empty;
         }

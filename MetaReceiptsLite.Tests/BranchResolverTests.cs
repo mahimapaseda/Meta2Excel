@@ -67,5 +67,39 @@ namespace MetaReceiptsLite.Tests
             Assert.Equal("neg", BranchResolver.ExtractAdSetCode("neg- oct ad set 01"));
             Assert.Equal("Gamp", BranchResolver.ExtractAdSetCode("Gamp - OCT ad set 02"));
         }
+
+        [Theory]
+        [InlineData("engagement ad set 01 - Galle", "Galle")]
+        [InlineData("Engagement ad set - AMB", "Ambalangoda")]
+        [InlineData("Engagement ad set - AMP", "Ampara")]
+        [InlineData("Engagement ad set - ANU", "Anuradhapura")]
+        [InlineData("Engagement ad set - BAD", "Badulla")]
+        [InlineData("Engagement ad set - BAN", "Bandarawela")]
+        [InlineData("Engagement ad set - GAM", "Gampaha")]
+        [InlineData("Engagement ad set - HOR", "Horana")]
+        [InlineData("Engagement ad set - KAN", "Kandy")]
+        [InlineData("Engagement ad set - KEG", "Kegalle")]
+        [InlineData("Engagement ad set - KUL", "Kuliyapitiya")]
+        [InlineData("Engagement ad set - KUR", "Kurunegala")]
+        [InlineData("Engagement ad set - MAL", "Malabe")]
+        [InlineData("Engagement ad set -KIR", "Kiribathgoda")]
+        [InlineData("Engagement ad set KIR NEW", "Kiribathgoda")]
+        [InlineData("Engagement ad set MAT", "Matara")]
+        [InlineData("Engagement ad set NEG", "Negombo")]
+        [InlineData("Engagement ad set NEG NEW", "Negombo")]
+        [InlineData("Engagement ad set NUG", "Nugegoda")]
+        [InlineData("Engagement ad set NUW", "Nuwara Eliya")]
+        [InlineData("Engagement ad set RAT", "Ratnapura")]
+        [InlineData("Engagement ad set WEN", "Wennappuwa")]
+        public void ResolveName_EngagementAdSets_ResolveToCorrectBranch(string adSet, string expectedBranch)
+        {
+            var it = new LineItem
+            {
+                AdSet = adSet,
+                CampaignCode = null,
+                CampaignName = null
+            };
+            Assert.Equal(expectedBranch, BranchResolver.ResolveName(it));
+        }
     }
 }
